@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { appointmentSlots } from '@/data/mockData';
 import { format, isSameDay } from 'date-fns';
@@ -97,7 +96,7 @@ const CalendarComponent = ({ dentistId, onAppointmentSelected }: CalendarCompone
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <Card className="md:col-span-1 shadow-md">
+      <Card className="md:col-span-1 shadow-sm">
         <CardContent className="p-4">
           <h3 className="text-lg font-medium mb-4">Изберете дата</h3>
           <Calendar
@@ -105,7 +104,7 @@ const CalendarComponent = ({ dentistId, onAppointmentSelected }: CalendarCompone
             selected={selectedDate}
             onSelect={handleDateChange}
             locale={bg}
-            className="pointer-events-auto"
+            className="mx-auto"
             modifiers={{
               available: isDayAvailable
             }}
@@ -124,14 +123,14 @@ const CalendarComponent = ({ dentistId, onAppointmentSelected }: CalendarCompone
               );
             }}
           />
-          <p className="text-sm text-gray-500 mt-4 flex items-center">
-            <Badge className="bg-dental-teal mr-2" />
+          <div className="flex items-center gap-2 mt-4 text-sm text-gray-500">
+            <div className="w-3 h-3 rounded-full bg-dental-teal"></div>
             <span>Налични часове</span>
-          </p>
+          </div>
         </CardContent>
       </Card>
 
-      <Card className="md:col-span-2 shadow-md">
+      <Card className="md:col-span-2 shadow-sm">
         <CardContent className="p-4">
           <h3 className="text-lg font-medium mb-4">
             {selectedDate 
