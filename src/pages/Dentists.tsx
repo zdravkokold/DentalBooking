@@ -10,7 +10,7 @@ import { Search } from 'lucide-react';
 
 const Dentists = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [specialization, setSpecialization] = useState('');
+  const [specialization, setSpecialization] = useState('all');
 
   // Extract unique specializations for the filter
   const specializations = Array.from(new Set(dentists.map(dentist => dentist.specialization)));
@@ -19,7 +19,7 @@ const Dentists = () => {
   const filteredDentists = dentists.filter(dentist => {
     const matchesSearch = dentist.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           dentist.bio.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesSpecialization = !specialization || dentist.specialization === specialization;
+    const matchesSpecialization = specialization === 'all' || dentist.specialization === specialization;
     return matchesSearch && matchesSpecialization;
   });
 
@@ -53,7 +53,7 @@ const Dentists = () => {
                   <SelectValue placeholder="Филтър по специалност" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Всички специалности</SelectItem>
+                  <SelectItem value="all">Всички специалности</SelectItem>
                   {specializations.map(spec => (
                     <SelectItem key={spec} value={spec}>{spec}</SelectItem>
                   ))}
