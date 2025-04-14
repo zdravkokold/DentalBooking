@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { dentists, services } from '@/data/mockData';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { CalendarClock } from 'lucide-react';
+import { CalendarClock, Filter } from 'lucide-react';
 
 const Appointments = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -41,22 +41,23 @@ const Appointments = () => {
       <Navbar />
       
       <main className="flex-grow bg-dental-lightGray">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="mb-10">
-            <h1 className="text-3xl font-bold text-gray-800 mb-3">Запазване на час</h1>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="mb-6">
+            <h1 className="text-3xl font-bold text-gray-800 mb-2">Запазване на час</h1>
             <p className="text-gray-600">
               Изберете предпочитан зъболекар, услуга и свободна дата и час за вашето посещение.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
             {/* Filters Card */}
-            <Card className="shadow-md">
-              <CardHeader className="pb-0">
+            <Card className="shadow-md lg:col-span-1 h-fit">
+              <CardHeader className="flex flex-row items-center gap-2 pb-2">
+                <Filter className="h-5 w-5 text-dental-teal" />
                 <h2 className="text-xl font-semibold text-gray-800">Филтри</h2>
               </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-3">
+              <CardContent className="space-y-5">
+                <div className="space-y-2">
                   <Label htmlFor="dentist" className="text-sm font-medium">Изберете зъболекар</Label>
                   <Select value={selectedDentist} onValueChange={handleDentistChange}>
                     <SelectTrigger id="dentist" className="w-full">
@@ -73,7 +74,7 @@ const Appointments = () => {
                   </Select>
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-2">
                   <Label htmlFor="service" className="text-sm font-medium">Изберете услуга</Label>
                   <Select value={selectedService} onValueChange={handleServiceChange}>
                     <SelectTrigger id="service" className="w-full">
@@ -91,29 +92,29 @@ const Appointments = () => {
                 </div>
 
                 {/* Selected filters display */}
-                {selectedDentist && selectedDentist !== 'all' && (
-                  <div className="mt-4 p-3 bg-dental-lightGray rounded-md">
-                    <p className="text-sm text-gray-700">
-                      Зъболекар: {dentists.find(d => d.id === selectedDentist)?.name}
-                    </p>
-                  </div>
-                )}
-
-                {selectedService && selectedService !== 'all' && (
-                  <div className="p-3 bg-dental-lightGray rounded-md">
-                    <p className="text-sm text-gray-700">
-                      Услуга: {services.find(s => s.id === selectedService)?.name} - {services.find(s => s.id === selectedService)?.price} лв.
-                    </p>
+                {(selectedDentist !== 'all' || selectedService !== 'all') && (
+                  <div className="mt-4 p-3 bg-gray-100 rounded-md">
+                    <h3 className="text-sm font-medium mb-2">Избрани филтри:</h3>
+                    {selectedDentist !== 'all' && (
+                      <p className="text-sm text-gray-700 mb-1">
+                        <span className="font-medium">Зъболекар:</span> {dentists.find(d => d.id === selectedDentist)?.name}
+                      </p>
+                    )}
+                    {selectedService !== 'all' && (
+                      <p className="text-sm text-gray-700">
+                        <span className="font-medium">Услуга:</span> {services.find(s => s.id === selectedService)?.name} - {services.find(s => s.id === selectedService)?.price} лв.
+                      </p>
+                    )}
                   </div>
                 )}
               </CardContent>
             </Card>
 
             {/* Calendar View */}
-            <div className="lg:col-span-2">
+            <div className="lg:col-span-3">
               <Card className="bg-white shadow-md h-full">
-                <CardHeader className="pb-0 flex flex-row items-center gap-3">
-                  <CalendarClock className="h-6 w-6 text-dental-teal" />
+                <CardHeader className="flex flex-row items-center gap-2 pb-2">
+                  <CalendarClock className="h-5 w-5 text-dental-teal" />
                   <h2 className="text-xl font-semibold">Изберете дата и час</h2>
                 </CardHeader>
                 <CardContent>

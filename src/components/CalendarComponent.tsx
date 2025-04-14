@@ -95,42 +95,44 @@ const CalendarComponent = ({ dentistId, onAppointmentSelected }: CalendarCompone
   });
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <Card className="md:col-span-1 shadow-sm">
+    <div className="grid md:grid-cols-12 gap-6">
+      <Card className="md:col-span-5 shadow-sm">
         <CardContent className="p-4">
           <h3 className="text-lg font-medium mb-4">Изберете дата</h3>
-          <Calendar
-            mode="single"
-            selected={selectedDate}
-            onSelect={handleDateChange}
-            locale={bg}
-            className="mx-auto"
-            modifiers={{
-              available: isDayAvailable
-            }}
-            modifiersStyles={{
-              available: { fontWeight: 'bold', color: '#008080' }
-            }}
-            disabled={(date) => {
-              // Disable dates in the past, weekends, or dates without available slots
-              const today = new Date();
-              today.setHours(0, 0, 0, 0);
-              return (
-                date < today ||
-                date.getDay() === 0 ||
-                date.getDay() === 6 ||
-                !isDayAvailable(date)
-              );
-            }}
-          />
-          <div className="flex items-center gap-2 mt-4 text-sm text-gray-500">
+          <div className="flex justify-center">
+            <Calendar
+              mode="single"
+              selected={selectedDate}
+              onSelect={handleDateChange}
+              locale={bg}
+              className="mx-auto pointer-events-auto"
+              modifiers={{
+                available: isDayAvailable
+              }}
+              modifiersStyles={{
+                available: { fontWeight: 'bold', color: '#008080' }
+              }}
+              disabled={(date) => {
+                // Disable dates in the past, weekends, or dates without available slots
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                return (
+                  date < today ||
+                  date.getDay() === 0 ||
+                  date.getDay() === 6 ||
+                  !isDayAvailable(date)
+                );
+              }}
+            />
+          </div>
+          <div className="flex items-center gap-2 mt-4 text-sm text-gray-500 justify-center">
             <div className="w-3 h-3 rounded-full bg-dental-teal"></div>
             <span>Налични часове</span>
           </div>
         </CardContent>
       </Card>
 
-      <Card className="md:col-span-2 shadow-sm">
+      <Card className="md:col-span-7 shadow-sm">
         <CardContent className="p-4">
           <h3 className="text-lg font-medium mb-4">
             {selectedDate 
@@ -142,13 +144,13 @@ const CalendarComponent = ({ dentistId, onAppointmentSelected }: CalendarCompone
             <p className="text-gray-500">Няма налични часове за избраната дата.</p>
           )}
 
-          <div className="space-y-6">
+          <div className="space-y-6 max-h-[400px] overflow-y-auto pr-2">
             {Object.entries(groupedTimeSlots).map(([hour, slots]) => (
               <div key={hour} className="animate-fade-in">
                 <h4 className="text-md font-medium text-gray-700 mb-2">
                   {hour}:00 - {parseInt(hour) + 1}:00
                 </h4>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {slots.map(slot => (
                     <Button
                       key={slot.id}
@@ -172,7 +174,7 @@ const CalendarComponent = ({ dentistId, onAppointmentSelected }: CalendarCompone
           </div>
 
           {selectedSlotId && (
-            <div className="mt-8 flex justify-end animate-fade-in">
+            <div className="mt-6 flex justify-end animate-fade-in">
               <Button 
                 className="bg-dental-teal hover:bg-dental-teal/90"
                 onClick={handleBookAppointment}
