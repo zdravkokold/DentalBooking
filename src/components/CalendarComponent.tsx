@@ -6,8 +6,9 @@ import { Button } from '@/components/ui/button';
 import { appointmentSlots } from '@/data/mockData';
 import { format, isSameDay } from 'date-fns';
 import { bg } from 'date-fns/locale';
-import { ChevronRight, Check } from 'lucide-react';
+import { ChevronRight, Check, Clock } from 'lucide-react';
 import { toast } from 'sonner';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface TimeSlot {
   id: string;
@@ -46,19 +47,40 @@ const CalendarComponent = ({ dentistId, onAppointmentSelected }: CalendarCompone
     if (!date) return [];
     
     const dateString = format(date, 'yyyy-MM-dd');
-    return appointmentSlots
+    
+    // Filter and sort slots, then ensure we don't have duplicates based on start time
+    const uniqueSlots = new Map();
+    
+    appointmentSlots
       .filter(slot => 
         slot.date === dateString && 
         slot.isAvailable && 
         (!dentistId || slot.dentistId === dentistId)
       )
-      .sort((a, b) => a.startTime.localeCompare(b.startTime))
-      .map(({ id, startTime, endTime, isAvailable }) => ({
-        id,
-        startTime,
-        endTime,
-        isAvailable
-      }));
+      .sort((a, b) => {
+        // Sort by hours first
+        const aHour = parseInt(a.startTime.split(':')[0]);
+        const bHour = parseInt(b.startTime.split(':')[0]);
+        if (aHour !== bHour) return aHour - bHour;
+        
+        // If hours are equal, sort by minutes
+        const aMinute = parseInt(a.startTime.split(':')[1]);
+        const bMinute = parseInt(b.startTime.split(':')[1]);
+        return aMinute - bMinute;
+      })
+      .forEach(slot => {
+        // Use the startTime as the key to avoid duplicates
+        if (!uniqueSlots.has(slot.startTime)) {
+          uniqueSlots.set(slot.startTime, {
+            id: slot.id,
+            startTime: slot.startTime,
+            endTime: slot.endTime,
+            isAvailable: slot.isAvailable
+          });
+        }
+      });
+    
+    return Array.from(uniqueSlots.values());
   };
 
   const timeSlots = selectedDate ? getTimeSlotsForDay(selectedDate) : [];
@@ -72,27 +94,83 @@ const CalendarComponent = ({ dentistId, onAppointmentSelected }: CalendarCompone
     setSelectedSlotId(slotId);
   };
 
-  const handleBookAppointment = () => {
+  const handleBookAppointment = async () => {
     if (selectedSlotId) {
-      // In a real app, this would make an API call to book the appointment
-      toast.success("Часът е запазен успешно!", {
-        description: `Вашият час беше успешно запазен за ${format(selectedDate!, 'dd MMMM yyyy', { locale: bg })} в ${appointmentSlots.find(slot => slot.id === selectedSlotId)?.startTime} ч.`
-      });
-      if (onAppointmentSelected) {
-        onAppointmentSelected(selectedSlotId);
+      try {
+        // In a real app, this would make an API call to book the appointment
+        // Example for future .NET API integration:
+        /*
+        const appointmentData = {
+          appointmentSlotId: selectedSlotId,
+          dentistId: dentistId || '',
+          date: format(selectedDate!, 'yyyy-MM-dd'),
+          time: timeSlots.find(slot => slot.id === selectedSlotId)?.startTime || '',
+        };
+
+        const response = await fetch('https://your-api-url/api/appointments', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          },
+          body: JSON.stringify(appointmentData),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          // Handle successful response
+        } else {
+          // Handle error response
+          throw new Error('Failed to book appointment');
+        }
+        */
+
+        // For now, just show a success toast
+        const selectedSlot = timeSlots.find(slot => slot.id === selectedSlotId);
+        
+        toast.success("Часът е запазен успешно!", {
+          description: `Вашият час беше успешно запазен за ${format(selectedDate!, 'dd MMMM yyyy', { locale: bg })} в ${selectedSlot?.startTime} ч.`
+        });
+        
+        if (onAppointmentSelected) {
+          onAppointmentSelected(selectedSlotId);
+        }
+      } catch (error) {
+        toast.error("Възникна грешка при запазване на часа", {
+          description: "Моля, опитайте отново по-късно или се свържете с нас."
+        });
+        console.error("Booking error:", error);
       }
     }
   };
 
   // Group time slots by hour for better UI organization
-  const groupedTimeSlots: { [hour: string]: TimeSlot[] } = {};
-  timeSlots.forEach(slot => {
-    const hour = slot.startTime.split(':')[0];
-    if (!groupedTimeSlots[hour]) {
-      groupedTimeSlots[hour] = [];
-    }
-    groupedTimeSlots[hour].push(slot);
-  });
+  const groupTimeSlotsByHour = () => {
+    const groupedSlots: Record<string, TimeSlot[]> = {};
+    
+    timeSlots.forEach(slot => {
+      const hour = parseInt(slot.startTime.split(':')[0]);
+      // Create hour range key (e.g., "09:00 - 10:00")
+      const hourString = hour.toString().padStart(2, '0');
+      const nextHour = (hour + 1).toString().padStart(2, '0');
+      const hourKey = `${hourString}:00 - ${nextHour}:00`;
+      
+      if (!groupedSlots[hourKey]) {
+        groupedSlots[hourKey] = [];
+      }
+      
+      groupedSlots[hourKey].push(slot);
+    });
+    
+    // Sort by hour
+    return Object.entries(groupedSlots).sort(([a], [b]) => {
+      const aHour = parseInt(a.split(':')[0]);
+      const bHour = parseInt(b.split(':')[0]);
+      return aHour - bHour;
+    });
+  };
+
+  const groupedTimeSlots = groupTimeSlotsByHour();
 
   return (
     <div className="grid md:grid-cols-12 gap-6">
@@ -144,34 +222,37 @@ const CalendarComponent = ({ dentistId, onAppointmentSelected }: CalendarCompone
             <p className="text-gray-500">Няма налични часове за избраната дата.</p>
           )}
 
-          <div className="space-y-6 max-h-[400px] overflow-y-auto pr-2">
-            {Object.entries(groupedTimeSlots).map(([hour, slots]) => (
-              <div key={hour} className="animate-fade-in">
-                <h4 className="text-md font-medium text-gray-700 mb-2">
-                  {hour}:00 - {parseInt(hour) + 1}:00
-                </h4>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {slots.map(slot => (
-                    <Button
-                      key={slot.id}
-                      variant={selectedSlotId === slot.id ? "default" : "outline"}
-                      className={`
-                        ${selectedSlotId === slot.id 
-                          ? 'bg-dental-teal hover:bg-dental-teal/90' 
-                          : 'hover:border-dental-teal hover:text-dental-teal'
-                        }
-                        transition-all
-                      `}
-                      onClick={() => handleSlotSelect(slot.id)}
-                    >
-                      {selectedSlotId === slot.id && <Check className="mr-1 h-4 w-4" />}
-                      {slot.startTime}
-                    </Button>
-                  ))}
+          <ScrollArea className="h-[400px] pr-4">
+            <div className="space-y-6">
+              {groupedTimeSlots.map(([hourRange, slots]) => (
+                <div key={hourRange} className="animate-fade-in">
+                  <div className="flex items-center mb-2 text-md font-medium text-gray-700">
+                    <Clock className="h-4 w-4 mr-1 text-dental-teal" />
+                    <h4>{hourRange}</h4>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {slots.map(slot => (
+                      <Button
+                        key={slot.id}
+                        variant={selectedSlotId === slot.id ? "default" : "outline"}
+                        className={`
+                          ${selectedSlotId === slot.id 
+                            ? 'bg-dental-teal hover:bg-dental-teal/90' 
+                            : 'hover:border-dental-teal hover:text-dental-teal'
+                          }
+                          transition-all
+                        `}
+                        onClick={() => handleSlotSelect(slot.id)}
+                      >
+                        {selectedSlotId === slot.id && <Check className="mr-1 h-4 w-4" />}
+                        {slot.startTime}
+                      </Button>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          </ScrollArea>
 
           {selectedSlotId && (
             <div className="mt-6 flex justify-end animate-fade-in">
