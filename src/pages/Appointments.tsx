@@ -60,7 +60,7 @@ const Appointments = () => {
                         <SelectValue placeholder="Всички зъболекари" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Всички зъболекари</SelectItem>
+                        <SelectItem value="all">Всички зъболекари</SelectItem>
                         {dentists.map(dentist => (
                           <SelectItem key={dentist.id} value={dentist.id}>
                             {dentist.name} - {dentist.specialization}
@@ -77,7 +77,7 @@ const Appointments = () => {
                         <SelectValue placeholder="Всички услуги" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Всички услуги</SelectItem>
+                        <SelectItem value="all">Всички услуги</SelectItem>
                         {services.map(service => (
                           <SelectItem key={service.id} value={service.id}>
                             {service.name} - {service.price} лв.
@@ -97,7 +97,7 @@ const Appointments = () => {
                   <h2 className="text-xl font-semibold">Изберете дата и час</h2>
                 </div>
 
-                {selectedDentist && (
+                {selectedDentist && selectedDentist !== 'all' && (
                   <div className="mb-4 p-3 bg-dental-lightGray rounded-md">
                     <p className="text-sm text-gray-700">
                       Зъболекар: {dentists.find(d => d.id === selectedDentist)?.name}
@@ -105,7 +105,7 @@ const Appointments = () => {
                   </div>
                 )}
 
-                {selectedService && (
+                {selectedService && selectedService !== 'all' && (
                   <div className="mb-4 p-3 bg-dental-lightGray rounded-md">
                     <p className="text-sm text-gray-700">
                       Услуга: {services.find(s => s.id === selectedService)?.name} - {services.find(s => s.id === selectedService)?.price} лв.
@@ -114,7 +114,7 @@ const Appointments = () => {
                 )}
 
                 <CalendarComponent 
-                  dentistId={selectedDentist || undefined}
+                  dentistId={selectedDentist !== 'all' ? selectedDentist : undefined}
                   onAppointmentSelected={handleAppointmentSelected} 
                 />
               </Card>
