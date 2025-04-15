@@ -24,7 +24,7 @@ const Services = () => {
           </p>
           
           <Tabs defaultValue="all" className="w-full">
-            <TabsList className="mb-6 bg-white">
+            <TabsList className="mb-6 bg-white space-x-2">
               <TabsTrigger value="all">Всички услуги</TabsTrigger>
               <TabsTrigger value="basic">Базови услуги</TabsTrigger>
               <TabsTrigger value="standard">Стандартни услуги</TabsTrigger>

@@ -11,6 +11,9 @@ import DentistDetail from "./pages/DentistDetail";
 import Services from "./pages/Services";
 import Contact from "./pages/Contact";
 import NotFound from "./pages/NotFound";
+import AdminDashboard from "./pages/AdminDashboard";
+import DentistDashboard from "./pages/DentistDashboard";
+import PatientDashboard from "./pages/PatientDashboard";
 
 const queryClient = new QueryClient();
 
@@ -27,6 +30,9 @@ const App = () => (
           <Route path="/dentists/:id" element={<DentistDetail />} />
           <Route path="/services" element={<Services />} />
           <Route path="/contact" element={<Contact />} />
+          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/dentist" element={<DentistDashboard />} />
+          <Route path="/patient" element={<PatientDashboard />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

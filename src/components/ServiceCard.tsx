@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Clock, Calendar } from 'lucide-react';
+import { Clock, Calendar, BadgeDollarSign } from 'lucide-react';
 import { Service } from '@/data/models';
 import { useNavigate } from 'react-router-dom';
 
@@ -13,11 +13,26 @@ interface ServiceCardProps {
 const ServiceCard = ({ service }: ServiceCardProps) => {
   const navigate = useNavigate();
   
+  // Define a mapping of service images based on service names
+  const serviceImages = {
+    "Профилактичен преглед": "https://images.unsplash.com/photo-1588776814546-daab30f9c6a4?q=80&w=1374&auto=format&fit=crop&ixlib=rb-4.0.3",
+    "Лечение на кариес": "https://images.unsplash.com/photo-1607613009820-a29f7bb81c04?q=80&w=1480&auto=format&fit=crop&ixlib=rb-4.0.3",
+    "Професионално избелване": "https://images.unsplash.com/photo-1563778084459-859099e48677?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.0.3",
+    "Поставяне на имплант": "https://images.unsplash.com/photo-1590424263400-5b8ceec7ef14?q=80&w=1528&auto=format&fit=crop&ixlib=rb-4.0.3",
+    "Ортодонтско лечение": "https://images.unsplash.com/photo-1598256989800-fe5f95da9787?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.0.3",
+    "Професионално почистване": "https://images.unsplash.com/photo-1606811841689-23dfddce3e95?q=80&w=1374&auto=format&fit=crop&ixlib=rb-4.0.3",
+    "Вадене на зъб": "https://images.unsplash.com/photo-1600170384310-419ccbbc4020?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.0.3",
+    "Детска дентална медицина": "https://images.unsplash.com/photo-1629909613654-28e377c37b09?q=80&w=1469&auto=format&fit=crop&ixlib=rb-4.0.3"
+  };
+  
+  // Use the mapped image or fall back to the original imageUrl
+  const imageUrl = serviceImages[service.name] || service.imageUrl;
+  
   return (
     <Card className="overflow-hidden transition-all hover:shadow-lg h-full flex flex-col">
       <div className="aspect-video overflow-hidden">
         <img 
-          src={service.imageUrl} 
+          src={imageUrl} 
           alt={service.name} 
           className="w-full h-full object-cover transition-transform hover:scale-105 duration-300"
         />
@@ -29,6 +44,7 @@ const ServiceCard = ({ service }: ServiceCardProps) => {
           <Clock className="h-4 w-4 mr-1" />
           <span>{service.duration} мин.</span>
           <span className="mx-2">•</span>
+          <BadgeDollarSign className="h-4 w-4 mr-1" />
           <span>{service.price.toLocaleString()} лв.</span>
         </div>
         
