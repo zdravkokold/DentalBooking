@@ -14,6 +14,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import DentistDashboard from "./pages/DentistDashboard";
 import PatientDashboard from "./pages/PatientDashboard";
 import Login from "./pages/Login";
+import Register from "./pages/Register";
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -28,6 +29,7 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
           <Route path="/appointments" element={<Appointments />} />
           <Route path="/dentists" element={<Dentists />} />
           <Route path="/dentists/:id" element={<DentistDetail />} />

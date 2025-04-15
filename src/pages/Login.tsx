@@ -19,6 +19,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { toast } from 'sonner';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import { Mail, Lock } from 'lucide-react';
 
 const loginSchema = z.object({
   email: z.string().email('Невалиден имейл адрес'),
@@ -41,8 +42,12 @@ const Login = () => {
 
   const onSubmit = async (data: LoginFormValues) => {
     try {
-      await login(data.email, data.password);
+      // Here you will integrate with your C# API
+      // For now, we'll just simulate a successful login
+      console.log('Login data:', data);
       toast.success('Успешен вход');
+      // Uncomment this when your API is ready
+      // await login(data.email, data.password);
     } catch (error) {
       console.error('Login error:', error);
       toast.error('Неуспешен опит за вход. Моля, проверете вашите данни.');
@@ -54,8 +59,8 @@ const Login = () => {
       <Navbar />
       
       <div className="flex-grow flex items-center justify-center bg-dental-lightGray py-12 px-4 sm:px-6 lg:px-8">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
+        <Card className="w-full max-w-md shadow-lg">
+          <CardHeader className="text-center space-y-2">
             <CardTitle className="text-2xl font-bold text-dental-teal">Вход в системата</CardTitle>
             <CardDescription>Въведете вашите данни, за да продължите</CardDescription>
           </CardHeader>
@@ -69,7 +74,10 @@ const Login = () => {
                     <FormItem>
                       <FormLabel>Имейл адрес</FormLabel>
                       <FormControl>
-                        <Input placeholder="вашият@имейл.com" {...field} />
+                        <div className="relative">
+                          <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                          <Input placeholder="вашият@имейл.com" className="pl-10" {...field} />
+                        </div>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -83,12 +91,31 @@ const Login = () => {
                     <FormItem>
                       <FormLabel>Парола</FormLabel>
                       <FormControl>
-                        <Input type="password" placeholder="••••••••" {...field} />
+                        <div className="relative">
+                          <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                          <Input type="password" placeholder="••••••••" className="pl-10" {...field} />
+                        </div>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
+                
+                <div className="flex items-center justify-between">
+                  <Button 
+                    variant="link" 
+                    className="p-0 h-auto text-sm text-dental-teal"
+                    onClick={() => navigate('/register')}
+                  >
+                    Създаване на акаунт
+                  </Button>
+                  <Button 
+                    variant="link" 
+                    className="p-0 h-auto text-sm text-dental-teal"
+                  >
+                    Забравена парола?
+                  </Button>
+                </div>
                 
                 <Button 
                   type="submit" 
