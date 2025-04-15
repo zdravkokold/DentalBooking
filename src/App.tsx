@@ -9,7 +9,6 @@ import Appointments from "./pages/Appointments";
 import Dentists from "./pages/Dentists";
 import DentistDetail from "./pages/DentistDetail";
 import Services from "./pages/Services";
-import Contact from "./pages/Contact";
 import NotFound from "./pages/NotFound";
 import AdminDashboard from "./pages/AdminDashboard";
 import DentistDashboard from "./pages/DentistDashboard";
@@ -67,7 +66,6 @@ const AppContent = () => {
         <Route path="/dentists" element={<Dentists />} />
         <Route path="/dentists/:id" element={<DentistDetail />} />
         <Route path="/services" element={<Services />} />
-        <Route path="/contact" element={<Contact />} />
         
         {/* Protected Routes */}
         <Route 

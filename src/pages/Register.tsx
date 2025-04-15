@@ -20,13 +20,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
@@ -37,9 +30,6 @@ const registerSchema = z.object({
   name: z.string().min(2, 'Името трябва да бъде поне 2 символа'),
   email: z.string().email('Невалиден имейл адрес'),
   password: z.string().min(6, 'Паролата трябва да бъде поне 6 символа'),
-  role: z.enum(['patient', 'dentist'], {
-    required_error: 'Моля, изберете роля',
-  }),
 });
 
 type RegisterFormValues = z.infer<typeof registerSchema>;
@@ -53,14 +43,19 @@ const Register = () => {
       name: '',
       email: '',
       password: '',
-      role: 'patient',
     },
   });
 
   const onSubmit = async (data: RegisterFormValues) => {
     try {
       // Here you will integrate with your C# API
-      console.log('Registration data:', data);
+      // All new registrations are automatically assigned the 'patient' role
+      const registrationData = {
+        ...data,
+        role: 'patient'
+      };
+      
+      console.log('Registration data:', registrationData);
       toast.success('Регистрацията е успешна! Моля, влезте с вашите данни.');
       navigate('/login');
     } catch (error) {
@@ -128,28 +123,6 @@ const Register = () => {
                           <Input type="password" placeholder="••••••••" className="pl-10" {...field} />
                         </div>
                       </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="role"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Регистрирам се като</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Изберете роля" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="patient">Пациент</SelectItem>
-                          <SelectItem value="dentist">Зъболекар</SelectItem>
-                        </SelectContent>
-                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}

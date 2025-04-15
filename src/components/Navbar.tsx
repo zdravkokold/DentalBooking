@@ -71,12 +71,6 @@ const Navbar = () => {
               >
                 Услуги
               </Link>
-              <Link
-                to="/contact"
-                className="text-gray-700 hover:text-dental-teal px-3 py-2 text-sm font-medium border-transparent hover:border-dental-teal"
-              >
-                Контакти
-              </Link>
             </div>
           </div>
           <div className="hidden sm:ml-6 sm:flex sm:items-center space-x-3">
@@ -132,13 +126,6 @@ const Navbar = () => {
             onClick={() => setIsOpen(false)}
           >
             Услуги
-          </Link>
-          <Link
-            to="/contact"
-            className="block px-3 py-2 text-base font-medium text-gray-700 hover:bg-gray-50 hover:text-dental-teal"
-            onClick={() => setIsOpen(false)}
-          >
-            Контакти
           </Link>
           <div className="pt-4 pb-3 border-t border-gray-200">
             <div className="flex items-center space-x-2 px-3 py-2">
