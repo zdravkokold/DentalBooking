@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -58,7 +57,14 @@ const UserManagement = () => {
 
   const onSubmit = async (data: UserFormValues) => {
     try {
-      await register(data);
+      const userData = {
+        name: data.name,
+        email: data.email,
+        password: data.password,
+        role: data.role
+      };
+      
+      await register(userData);
       toast.success(`${data.role === 'dentist' ? 'Зъболекарят' : 'Потребителят'} е регистриран успешно`);
       form.reset();
       setIsAddingUser(false);
