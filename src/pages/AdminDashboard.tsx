@@ -33,7 +33,6 @@ const AdminDashboard = () => {
 
       <main className="flex-grow bg-dental-lightGray">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {/* Dashboard Navigation Tabs */}
           <Tabs defaultValue="overview" className="mb-6">
             <TabsList className="bg-white">
               <TabsTrigger value="overview">Обща информация</TabsTrigger>
@@ -44,9 +43,7 @@ const AdminDashboard = () => {
               <TabsTrigger value="settings">Настройки</TabsTrigger>
             </TabsList>
             
-            {/* Overview Tab */}
             <TabsContent value="overview" className="mt-6">
-              {/* Stats Cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 <Card>
                   <CardContent className="flex items-center p-6">
@@ -101,7 +98,6 @@ const AdminDashboard = () => {
                 </Card>
               </div>
 
-              {/* Chart and Activity */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
                 <Card className="lg:col-span-2">
                   <CardHeader>
@@ -167,7 +163,6 @@ const AdminDashboard = () => {
                 </Card>
               </div>
 
-              {/* Quick Actions */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <Button className="flex items-center justify-center gap-2 h-auto py-3">
                   <PlusCircle className="h-4 w-4" />
@@ -188,7 +183,6 @@ const AdminDashboard = () => {
               </div>
             </TabsContent>
             
-            {/* Placeholder for other tabs */}
             <TabsContent value="patients" className="mt-6">
               <Card>
                 <CardHeader>
@@ -242,7 +236,7 @@ const AdminDashboard = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="h-80 flex items-center justify-center bg-gray-50 rounded">
-                    <Tooth className="h-16 w-16 text-gray-300" />
+                    <Stethoscope className="h-16 w-16 text-gray-300" />
                     <span className="ml-2 text-gray-400">Тук ще бъде таблицата с услуги</span>
                   </div>
                 </CardContent>
