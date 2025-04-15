@@ -1,4 +1,3 @@
-
 import React from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -7,7 +6,7 @@ import {
   ChartPie,
   Users,
   CalendarDays,
-  Tooth,
+  Stethoscope,
   AlertTriangle,
   TrendingUp,
   User,
@@ -78,7 +77,7 @@ const AdminDashboard = () => {
                 <Card>
                   <CardContent className="flex items-center p-6">
                     <div className="bg-dental-teal/10 p-3 rounded-full mr-4">
-                      <Tooth className="h-8 w-8 text-dental-teal" />
+                      <Stethoscope className="h-8 w-8 text-dental-teal" />
                     </div>
                     <div>
                       <p className="text-sm font-medium text-gray-500">Общо услуги</p>

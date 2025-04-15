@@ -1,4 +1,3 @@
-
 import React from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -11,7 +10,7 @@ import {
   MessageSquare,
   User,
   Bell,
-  Tooth,
+  Stethoscope,
   BadgeDollarSign,
   CalendarRange,
   History,
@@ -24,10 +23,12 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from "@/components/ui/badge";
 import ServiceCard from '@/components/ServiceCard';
 import { services } from '@/data/mockData';
+import { useNavigate } from 'react-router-dom';
 
 const PatientDashboard = () => {
   const today = new Date().toLocaleDateString('bg-BG', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
   const featuredServices = services.slice(0, 3);
+  const navigate = useNavigate();
   
   return (
     <div className="flex flex-col min-h-screen">
@@ -50,7 +51,6 @@ const PatientDashboard = () => {
 
       <main className="flex-grow bg-dental-lightGray">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {/* Dashboard Navigation Tabs */}
           <Tabs defaultValue="overview" className="mb-6">
             <TabsList className="bg-white">
               <TabsTrigger value="overview">Начало</TabsTrigger>
@@ -59,11 +59,9 @@ const PatientDashboard = () => {
               <TabsTrigger value="profile">Профил</TabsTrigger>
             </TabsList>
             
-            {/* Overview Tab */}
             <TabsContent value="overview" className="mt-6">
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2 space-y-6">
-                  {/* Upcoming Appointment */}
                   <Card>
                     <CardHeader>
                       <CardTitle className="flex items-center justify-between">
@@ -98,7 +96,6 @@ const PatientDashboard = () => {
                     </CardFooter>
                   </Card>
 
-                  {/* Treatment Plan */}
                   <Card>
                     <CardHeader>
                       <CardTitle>Моят план за лечение</CardTitle>
@@ -146,7 +143,6 @@ const PatientDashboard = () => {
                 </div>
 
                 <div className="space-y-6">
-                  {/* Profile Summary */}
                   <Card>
                     <CardHeader>
                       <CardTitle>Информация за пациента</CardTitle>
@@ -176,7 +172,6 @@ const PatientDashboard = () => {
                     </CardFooter>
                   </Card>
 
-                  {/* Notifications */}
                   <Card>
                     <CardHeader>
                       <CardTitle>Известия</CardTitle>
@@ -203,7 +198,7 @@ const PatientDashboard = () => {
                         </div>
                         <div className="flex items-start">
                           <div className="bg-purple-100 p-2 rounded-full mr-3">
-                            <Tooth className="h-4 w-4 text-purple-600" />
+                            <Stethoscope className="h-4 w-4 text-purple-600" />
                           </div>
                           <div>
                             <p className="text-sm font-medium">Напомняне</p>
@@ -216,7 +211,6 @@ const PatientDashboard = () => {
                 </div>
               </div>
 
-              {/* Recommended Services */}
               <div className="mt-8">
                 <h2 className="text-2xl font-bold mb-4">Препоръчани услуги</h2>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -227,7 +221,6 @@ const PatientDashboard = () => {
               </div>
             </TabsContent>
             
-            {/* Appointments Tab */}
             <TabsContent value="appointments" className="mt-6">
               <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
                 <Card className="lg:col-span-1">
@@ -285,7 +278,6 @@ const PatientDashboard = () => {
               </div>
             </TabsContent>
 
-            {/* History Tab */}
             <TabsContent value="history" className="mt-6">
               <Card>
                 <CardHeader>
@@ -345,7 +337,6 @@ const PatientDashboard = () => {
               </Card>
             </TabsContent>
 
-            {/* Profile Tab */}
             <TabsContent value="profile" className="mt-6">
               <Card>
                 <CardHeader>
@@ -368,7 +359,6 @@ const PatientDashboard = () => {
   );
 };
 
-// Add missing icon components
 const CheckCircle = (props) => (
   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
     <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
