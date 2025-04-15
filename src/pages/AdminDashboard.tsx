@@ -1,3 +1,4 @@
+
 import React from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -18,6 +19,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import UserManagement from '@/components/admin/UserManagement';
 
 const AdminDashboard = () => {
   return (
@@ -40,6 +42,7 @@ const AdminDashboard = () => {
               <TabsTrigger value="dentists">Зъболекари</TabsTrigger>
               <TabsTrigger value="appointments">Часове</TabsTrigger>
               <TabsTrigger value="services">Услуги</TabsTrigger>
+              <TabsTrigger value="users">Потребители</TabsTrigger>
               <TabsTrigger value="settings">Настройки</TabsTrigger>
             </TabsList>
             
@@ -241,6 +244,10 @@ const AdminDashboard = () => {
                   </div>
                 </CardContent>
               </Card>
+            </TabsContent>
+            
+            <TabsContent value="users" className="mt-6">
+              <UserManagement />
             </TabsContent>
 
             <TabsContent value="settings" className="mt-6">
