@@ -16,7 +16,6 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { toast } from 'sonner';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Mail, Lock } from 'lucide-react';
@@ -29,8 +28,27 @@ const loginSchema = z.object({
 type LoginFormValues = z.infer<typeof loginSchema>;
 
 const Login = () => {
-  const { login, isLoading } = useAuth();
+  const { login, isLoading, user } = useAuth();
   const navigate = useNavigate();
+  
+  // Redirect if already logged in
+  React.useEffect(() => {
+    if (user) {
+      switch (user.role) {
+        case 'admin':
+          navigate('/admin');
+          break;
+        case 'dentist':
+          navigate('/dentist');
+          break;
+        case 'patient':
+          navigate('/patient');
+          break;
+        default:
+          navigate('/');
+      }
+    }
+  }, [user, navigate]);
   
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -42,15 +60,11 @@ const Login = () => {
 
   const onSubmit = async (data: LoginFormValues) => {
     try {
-      // Here you will integrate with your C# API
-      // For now, we'll just simulate a successful login
-      console.log('Login data:', data);
-      toast.success('Успешен вход');
-      // Uncomment this when your API is ready
-      // await login(data.email, data.password);
+      await login(data.email, data.password);
+      // Navigation will happen in the useEffect above once the user state is updated
     } catch (error) {
-      console.error('Login error:', error);
-      toast.error('Неуспешен опит за вход. Моля, проверете вашите данни.');
+      // Error is already handled in the AuthContext
+      console.error('Login submission error:', error);
     }
   };
 
@@ -112,6 +126,7 @@ const Login = () => {
                   <Button 
                     variant="link" 
                     className="p-0 h-auto text-sm text-dental-teal"
+                    type="button"
                   >
                     Забравена парола?
                   </Button>

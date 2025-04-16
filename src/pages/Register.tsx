@@ -25,6 +25,7 @@ import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { User, Mail, Lock } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 
 const registerSchema = z.object({
   name: z.string().min(2, 'Името трябва да бъде поне 2 символа'),
@@ -36,6 +37,7 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
 
 const Register = () => {
   const navigate = useNavigate();
+  const { register: registerUser, isLoading } = useAuth();
   
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
@@ -48,19 +50,18 @@ const Register = () => {
 
   const onSubmit = async (data: RegisterFormValues) => {
     try {
-      // Here you will integrate with your C# API
       // All new registrations are automatically assigned the 'patient' role
-      const registrationData = {
-        ...data,
+      await registerUser({
+        name: data.name,
+        email: data.email,
+        password: data.password,
         role: 'patient'
-      };
+      });
       
-      console.log('Registration data:', registrationData);
-      toast.success('Регистрацията е успешна! Моля, влезте с вашите данни.');
       navigate('/login');
     } catch (error) {
       console.error('Registration error:', error);
-      toast.error('Регистрацията не беше успешна. Моля, опитайте отново.');
+      // The error message is already displayed by the AuthProvider
     }
   };
 
@@ -131,8 +132,9 @@ const Register = () => {
                 <Button 
                   type="submit" 
                   className="w-full bg-dental-teal hover:bg-opacity-90" 
+                  disabled={isLoading}
                 >
-                  Регистрация
+                  {isLoading ? 'Регистрация...' : 'Регистрация'}
                 </Button>
                 
                 <div className="text-center pt-4">

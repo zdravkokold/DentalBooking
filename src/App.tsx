@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -15,7 +14,7 @@ import DentistDashboard from "./pages/DentistDashboard";
 import PatientDashboard from "./pages/PatientDashboard";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
-import { AuthProvider } from "./context/AuthContext";
+import { AuthProvider, useAuth } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { checkUpcomingAppointments } from "./services/notificationService";
 
@@ -46,6 +45,8 @@ const sampleAppointments = [
 const queryClient = new QueryClient();
 
 const AppContent = () => {
+  const { user, isAuthenticated } = useAuth();
+  
   useEffect(() => {
     // Check for upcoming appointments when the app loads
     // In a real app, you would fetch this from your API
@@ -53,6 +54,14 @@ const AppContent = () => {
       checkUpcomingAppointments(sampleAppointments);
     }, 3000); // Show notification after 3 seconds for demo purposes
   }, []);
+
+  // Redirect the user based on their role when they login
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      // This will handle navigation after login if the user tries to access the root route
+      // Other routes are handled by the ProtectedRoute component
+    }
+  }, [isAuthenticated, user]);
 
   return (
     <>

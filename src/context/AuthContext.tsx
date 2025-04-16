@@ -1,6 +1,8 @@
 
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 type UserRole = 'admin' | 'dentist' | 'patient';
 
@@ -21,7 +23,7 @@ interface AuthContextType {
   isLoading: boolean;
 }
 
-interface RegisterData {
+export interface RegisterData {
   name: string;
   email: string;
   password: string;
@@ -38,60 +40,105 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   // Check for existing session on load
   useEffect(() => {
     const checkAuth = async () => {
-      const storedUser = localStorage.getItem('user');
-      if (storedUser) {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session) {
         try {
-          const parsedUser = JSON.parse(storedUser);
-          // You should validate the token with your backend here
-          setUser(parsedUser);
+          // Fetch user profile from our profiles table
+          const { data: profile, error: profileError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+          
+          if (profileError || !profile) {
+            console.error('Failed to fetch profile:', profileError);
+            setIsLoading(false);
+            return;
+          }
+          
+          const authenticatedUser = {
+            id: session.user.id,
+            name: `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || session.user.email?.split('@')[0] || 'User',
+            email: session.user.email || '',
+            role: profile.role as UserRole,
+            token: session.access_token,
+          };
+          
+          setUser(authenticatedUser);
         } catch (error) {
-          console.error('Failed to parse stored user:', error);
-          localStorage.removeItem('user');
+          console.error('Failed to parse session:', error);
+          await supabase.auth.signOut();
         }
       }
+      
       setIsLoading(false);
     };
     
     checkAuth();
-  }, []);
+    
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        setIsLoading(true);
+        
+        if (event === 'SIGNED_IN' && session) {
+          // Fetch user profile from our profiles table
+          const { data: profile, error: profileError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+          
+          if (profileError || !profile) {
+            console.error('Failed to fetch profile:', profileError);
+            setIsLoading(false);
+            return;
+          }
+          
+          const authenticatedUser = {
+            id: session.user.id,
+            name: `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || session.user.email?.split('@')[0] || 'User',
+            email: session.user.email || '',
+            role: profile.role as UserRole,
+            token: session.access_token,
+          };
+          
+          setUser(authenticatedUser);
+        } else if (event === 'SIGNED_OUT') {
+          setUser(null);
+        }
+        
+        setIsLoading(false);
+      }
+    );
+    
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [navigate]);
 
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      // Replace with your actual API endpoint
-      const response = await fetch('https://your-c-sharp-api-url/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Login failed');
+      if (error) {
+        toast.error(error.message);
+        throw error;
       }
 
-      const userData = await response.json();
-      const authenticatedUser = {
-        id: userData.id,
-        name: userData.name,
-        email: userData.email,
-        role: userData.role as UserRole,
-        token: userData.token,
-      };
+      if (!data.session) {
+        toast.error('No session returned after login');
+        throw new Error('No session returned after login');
+      }
 
-      setUser(authenticatedUser);
-      localStorage.setItem('user', JSON.stringify(authenticatedUser));
+      // Navigation will happen automatically via the onAuthStateChange listener
+      toast.success('Успешен вход');
       
-      // Redirect based on role
-      if (authenticatedUser.role === 'admin') {
-        navigate('/admin');
-      } else if (authenticatedUser.role === 'dentist') {
-        navigate('/dentist');
-      } else if (authenticatedUser.role === 'patient') {
-        navigate('/patient');
-      }
     } catch (error) {
       console.error('Login error:', error);
       throw error;
@@ -103,23 +150,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const register = async (userData: RegisterData) => {
     setIsLoading(true);
     try {
-      // Replace with your actual API endpoint
-      const response = await fetch('https://your-c-sharp-api-url/api/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(userData),
+      const { data, error } = await supabase.auth.signUp({
+        email: userData.email,
+        password: userData.password,
+        options: {
+          data: {
+            first_name: userData.name.split(' ')[0] || '',
+            last_name: userData.name.split(' ').slice(1).join(' ') || '',
+            role: userData.role
+          }
+        }
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Registration failed');
+      if (error) {
+        toast.error(error.message);
+        throw error;
       }
 
-      const responseData = await response.json();
-      // For admin-created accounts, we don't log the user in automatically
-      return responseData;
+      toast.success('Регистрацията е успешна!');
+      return data;
     } catch (error) {
       console.error('Registration error:', error);
       throw error;
@@ -128,9 +177,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
+    await supabase.auth.signOut();
     setUser(null);
-    localStorage.removeItem('user');
     navigate('/');
   };
 

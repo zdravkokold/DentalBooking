@@ -46,7 +46,7 @@ import {
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { PlusCircle, Users, UserCog, User } from 'lucide-react';
-import { userApi } from '@/services/api';
+import { supabase } from "@/integrations/supabase/client";
 
 // Mock users data - in a real app, this would come from your API
 const mockUsers = [
@@ -101,7 +101,7 @@ const UserManagement = () => {
         name: data.name,
         email: data.email,
         password: data.password,
-        role: 'patient' // Default role is always patient for new registrations
+        role: 'patient' as 'admin' | 'dentist' | 'patient' // Fixed type issue here
       };
       
       await register(userData);
@@ -133,8 +133,13 @@ const UserManagement = () => {
     if (!selectedUser) return;
     
     try {
-      // In a real app, you'd call your API here
-      // await userApi.update(selectedUser.id, { role: data.role });
+      // In a real app with Supabase, we would update the profile here
+      // const { error } = await supabase
+      //   .from('profiles')
+      //   .update({ role: data.role })
+      //   .eq('id', selectedUser.id);
+      
+      // if (error) throw error;
       
       // For now, we'll update our mock data
       const updatedUsers = users.map(user => 
