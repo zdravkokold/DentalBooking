@@ -24,15 +24,19 @@ const queryClient = new QueryClient({
     queries: {
       // Add retry: false to prevent excessive API calls when errors occur
       retry: false,
-      // Add error handling for debugging
-      onError: (error) => {
-        console.error("Query error:", error);
+      // Updated error handling approach for current version
+      onSettled: (_data, error) => {
+        if (error) {
+          console.error("Query error:", error);
+        }
       }
     },
     mutations: {
-      // Add error handling for debugging
-      onError: (error) => {
-        console.error("Mutation error:", error);
+      // Updated error handling approach for current version
+      onSettled: (_data, error) => {
+        if (error) {
+          console.error("Mutation error:", error);
+        }
       }
     }
   }
