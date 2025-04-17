@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -9,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Calendar, CalendarDays, Clock, CheckCircle, AlertCircle, ClipboardEdit, MessageSquare } from 'lucide-react';
 import { appointmentService } from '@/services/appointmentService';
 import { Appointment } from '@/data/models';
+import { toast } from 'sonner';
 
 // Import dentist-specific components
 import AppointmentHistory from '@/components/dentist/AppointmentHistory';
@@ -25,6 +27,7 @@ const DentistDashboard = () => {
     completed: 0,
     cancelled: 0
   });
+  const navigate = useNavigate();
 
   useEffect(() => {
     const loadAppointments = async () => {
@@ -44,6 +47,7 @@ const DentistDashboard = () => {
         });
       } catch (error) {
         console.error('Failed to load appointments:', error);
+        toast.error('Неуспешно зареждане на часове');
       } finally {
         setLoading(false);
       }
@@ -51,6 +55,28 @@ const DentistDashboard = () => {
 
     loadAppointments();
   }, []);
+
+  // Функции за обработка на бутоните
+  const handleViewDetails = (appointmentId) => {
+    toast.info('Преглед на детайли', {
+      description: `Преглеждане на детайли за час #${appointmentId}`
+    });
+    // Тук бихме отворили модален прозорец с детайли или пренасочили към страница с детайли
+  };
+  
+  const handleReschedule = (appointmentId) => {
+    toast.info('Пренасрочване', {
+      description: `Пренасрочване на час #${appointmentId}`
+    });
+    // Тук бихме отворили модален прозорец за пренасрочване или пренасочили към страница за пренасрочване
+  };
+  
+  const handleRemind = (appointmentId) => {
+    toast.success('Изпратено напомняне', {
+      description: `Напомняне беше изпратено на пациент #${appointmentId}`
+    });
+    // Тук бихме изпратили напомняне на пациента
+  };
 
   // For demo purposes, we'll use a hardcoded dentist name
   const dentistName = user?.name || "Д-р Иванов";
@@ -138,15 +164,15 @@ const DentistDashboard = () => {
                         </p>
                       </div>
                       <div className="flex gap-2">
-                        <Button variant="outline" size="sm">
+                        <Button variant="outline" size="sm" onClick={() => handleViewDetails(appointment.id)}>
                           <ClipboardEdit className="h-4 w-4 mr-1" />
                           Детайли
                         </Button>
-                        <Button variant="outline" size="sm">
+                        <Button variant="outline" size="sm" onClick={() => handleReschedule(appointment.id)}>
                           <Calendar className="h-4 w-4 mr-1" />
                           Пренасрочи
                         </Button>
-                        <Button variant="outline" size="sm">
+                        <Button variant="outline" size="sm" onClick={() => handleRemind(appointment.id)}>
                           <MessageSquare className="h-4 w-4 mr-1" />
                           Напомни
                         </Button>

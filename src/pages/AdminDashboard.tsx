@@ -1,5 +1,6 @@
 
-import React from 'react';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -19,9 +20,44 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { toast } from 'sonner';
 import UserManagement from '@/components/admin/UserManagement';
 
 const AdminDashboard = () => {
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState('overview');
+
+  // Функции за обработка на бутоните
+  const handleAddPatient = () => {
+    toast.info('Добавяне на нов пациент', {
+      description: 'Функционалността за добавяне на нов пациент е в процес на разработка.'
+    });
+    // Тук бихме пренасочили към формата за добавяне на нов пациент или отворили модален прозорец
+  };
+
+  const handleBookAppointment = () => {
+    navigate('/appointments');
+    toast.info('Пренасочване към запазване на час');
+  };
+
+  const handleCreateInvoice = () => {
+    toast.info('Създаване на нова фактура', {
+      description: 'Функционалността за създаване на нова фактура е в процес на разработка.'
+    });
+    // Тук бихме пренасочили към формата за създаване на нова фактура или отворили модален прозорец
+  };
+
+  const handleSendMessage = () => {
+    toast.info('Изпращане на съобщение', {
+      description: 'Функционалността за изпращане на съобщение е в процес на разработка.'
+    });
+    // Тук бихме пренасочили към формата за изпращане на съобщение или отворили модален прозорец
+  };
+
+  const handleTabChange = (value) => {
+    setActiveTab(value);
+  };
+
   return (
     <div className="flex flex-col min-h-screen">
       <Navbar />
@@ -35,7 +71,7 @@ const AdminDashboard = () => {
 
       <main className="flex-grow bg-dental-lightGray">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <Tabs defaultValue="overview" className="mb-6">
+          <Tabs value={activeTab} onValueChange={handleTabChange} className="mb-6">
             <TabsList className="bg-white">
               <TabsTrigger value="overview">Обща информация</TabsTrigger>
               <TabsTrigger value="patients">Пациенти</TabsTrigger>
@@ -167,19 +203,19 @@ const AdminDashboard = () => {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <Button className="flex items-center justify-center gap-2 h-auto py-3">
+                <Button className="flex items-center justify-center gap-2 h-auto py-3" onClick={handleAddPatient}>
                   <PlusCircle className="h-4 w-4" />
                   <span>Нов пациент</span>
                 </Button>
-                <Button className="flex items-center justify-center gap-2 h-auto py-3">
+                <Button className="flex items-center justify-center gap-2 h-auto py-3" onClick={handleBookAppointment}>
                   <CalendarDays className="h-4 w-4" />
                   <span>Запази час</span>
                 </Button>
-                <Button className="flex items-center justify-center gap-2 h-auto py-3">
+                <Button className="flex items-center justify-center gap-2 h-auto py-3" onClick={handleCreateInvoice}>
                   <FileText className="h-4 w-4" />
                   <span>Нова фактура</span>
                 </Button>
-                <Button className="flex items-center justify-center gap-2 h-auto py-3">
+                <Button className="flex items-center justify-center gap-2 h-auto py-3" onClick={handleSendMessage}>
                   <MessageSquare className="h-4 w-4" />
                   <span>Изпрати съобщение</span>
                 </Button>

@@ -17,15 +17,29 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { checkUpcomingAppointments } from "./services/notificationService";
+import { toast } from "sonner";
 
-// Configure a new query client with error handling
+// Конфигурация на QueryClient с правилна обработка на грешки
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      // Add retry: false to prevent excessive API calls when errors occur
       retry: false,
+      onSettled: (data, error) => {
+        if (error) {
+          console.error('Query error:', error);
+          toast.error('Възникна грешка при заявката');
+        }
+      }
     },
-    mutations: {}
+    mutations: {
+      retry: false,
+      onSettled: (data, error) => {
+        if (error) {
+          console.error('Mutation error:', error);
+          toast.error('Възникна грешка при обработката на данните');
+        }
+      }
+    }
   }
 });
 
@@ -35,6 +49,19 @@ const AppContent = () => {
   useEffect(() => {
     // For debugging
     console.log("App content rendered, auth state:", { user, isAuthenticated });
+
+    // Проверка за предстоящи часове
+    const checkAppointments = async () => {
+      try {
+        await checkUpcomingAppointments();
+      } catch (error) {
+        console.error("Failed to check upcoming appointments:", error);
+      }
+    };
+
+    if (isAuthenticated) {
+      checkAppointments();
+    }
   }, [user, isAuthenticated]);
 
   return (

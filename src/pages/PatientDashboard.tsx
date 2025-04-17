@@ -1,4 +1,6 @@
-import React from 'react';
+
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
@@ -21,14 +23,53 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from "@/components/ui/badge";
+import { toast } from 'sonner';
 import ServiceCard from '@/components/ServiceCard';
 import { services } from '@/data/mockData';
-import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/context/AuthContext';
 
 const PatientDashboard = () => {
   const today = new Date().toLocaleDateString('bg-BG', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
   const featuredServices = services.slice(0, 3);
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState('overview');
+  
+  // Функции за обработка на бутоните
+  const handleCancelAppointment = (appointmentId) => {
+    toast.success('Часът е отказан успешно', {
+      description: 'Вашият час беше отказан успешно.'
+    });
+    // В реалния случай бихме изпратили заявка към API за отмяна на часа
+  };
+  
+  const handleRescheduleAppointment = (appointmentId) => {
+    navigate('/appointments');
+    toast.success('Пренасочване към промяна на час', {
+      description: 'Изберете ново време за вашия час.'
+    });
+  };
+  
+  const handleBookAppointment = () => {
+    navigate('/appointments');
+    toast.success('Пренасочване към запазване на час', {
+      description: 'Изберете зъболекар и време за вашия нов час.'
+    });
+  };
+  
+  const handleViewAppointmentDetails = (appointmentId) => {
+    toast.info('Преглед на детайли за час', {
+      description: `Преглеждане на информация за час #${appointmentId}`
+    });
+    // Тук бихме отворили модален прозорец с детайли или пренасочили към страница с детайли
+  };
+  
+  const handleEditProfile = () => {
+    setActiveTab('profile');
+    toast.info('Редактиране на профил', {
+      description: 'Сега можете да редактирате вашия профил.'
+    });
+  };
   
   return (
     <div className="flex flex-col min-h-screen">
@@ -42,7 +83,7 @@ const PatientDashboard = () => {
               <AvatarFallback>МГ</AvatarFallback>
             </Avatar>
             <div>
-              <h1 className="text-3xl font-bold text-white">Здравейте, Мария!</h1>
+              <h1 className="text-3xl font-bold text-white">Здравейте, {user?.name || 'Мария'}!</h1>
               <p className="text-dental-mint">{today}</p>
             </div>
           </div>
@@ -51,7 +92,7 @@ const PatientDashboard = () => {
 
       <main className="flex-grow bg-dental-lightGray">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <Tabs defaultValue="overview" className="mb-6">
+          <Tabs defaultValue="overview" value={activeTab} onValueChange={setActiveTab} className="mb-6">
             <TabsList className="bg-white">
               <TabsTrigger value="overview">Начало</TabsTrigger>
               <TabsTrigger value="appointments">Моите часове</TabsTrigger>
@@ -87,10 +128,10 @@ const PatientDashboard = () => {
                       </div>
                     </CardContent>
                     <CardFooter className="flex justify-between">
-                      <Button variant="outline" size="sm">
+                      <Button variant="outline" size="sm" onClick={() => handleCancelAppointment('upcoming-1')}>
                         <X className="h-4 w-4 mr-1" /> Откажи
                       </Button>
-                      <Button variant="outline" size="sm">
+                      <Button variant="outline" size="sm" onClick={() => handleRescheduleAppointment('upcoming-1')}>
                         <CalendarRange className="h-4 w-4 mr-1" /> Промени
                       </Button>
                     </CardFooter>
@@ -121,7 +162,7 @@ const PatientDashboard = () => {
                             <p className="font-medium">Лечение на кариес (горе вляво)</p>
                             <p className="text-sm text-gray-500">Препоръчано от д-р Иванова</p>
                           </div>
-                          <Button size="sm" variant="outline">
+                          <Button size="sm" variant="outline" onClick={() => handleBookAppointment()}>
                             <CalendarDays className="h-4 w-4 mr-1" /> Запази час
                           </Button>
                         </li>
@@ -133,7 +174,7 @@ const PatientDashboard = () => {
                             <p className="font-medium">Професионално почистване</p>
                             <p className="text-sm text-gray-500">Препоръчано от д-р Иванова</p>
                           </div>
-                          <Button size="sm" variant="outline">
+                          <Button size="sm" variant="outline" onClick={() => handleBookAppointment()}>
                             <CalendarDays className="h-4 w-4 mr-1" /> Запази час
                           </Button>
                         </li>
@@ -166,7 +207,7 @@ const PatientDashboard = () => {
                       </div>
                     </CardContent>
                     <CardFooter>
-                      <Button variant="outline" size="sm" className="w-full">
+                      <Button variant="outline" size="sm" className="w-full" onClick={handleEditProfile}>
                         Редактирай профила
                       </Button>
                     </CardFooter>
@@ -228,7 +269,7 @@ const PatientDashboard = () => {
                     <CardTitle>Запази нов час</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <Button className="w-full" onClick={() => navigate('/appointments')}>
+                    <Button className="w-full" onClick={() => handleBookAppointment()}>
                       <PlusCircle className="h-4 w-4 mr-2" />
                       Нов час
                     </Button>
@@ -251,7 +292,7 @@ const PatientDashboard = () => {
                           <p className="text-sm text-gray-500">Д-р Мария Иванова</p>
                         </div>
                         <div>
-                          <Button variant="outline" size="sm">
+                          <Button variant="outline" size="sm" onClick={() => handleCancelAppointment('appointment-1')}>
                             <X className="h-4 w-4 mr-1" /> Откажи
                           </Button>
                         </div>
@@ -267,7 +308,7 @@ const PatientDashboard = () => {
                           <p className="text-sm text-gray-500">Д-р Петър Димитров</p>
                         </div>
                         <div>
-                          <Button variant="outline" size="sm">
+                          <Button variant="outline" size="sm" onClick={() => handleCancelAppointment('appointment-2')}>
                             <X className="h-4 w-4 mr-1" /> Откажи
                           </Button>
                         </div>
@@ -295,7 +336,7 @@ const PatientDashboard = () => {
                         <p className="text-sm text-gray-500">Д-р Мария Иванова</p>
                       </div>
                       <div>
-                        <Button variant="outline" size="sm">
+                        <Button variant="outline" size="sm" onClick={() => handleViewAppointmentDetails('history-1')}>
                           <FileText className="h-4 w-4 mr-1" /> Детайли
                         </Button>
                       </div>
@@ -311,7 +352,7 @@ const PatientDashboard = () => {
                         <p className="text-sm text-gray-500">Д-р Мария Иванова</p>
                       </div>
                       <div>
-                        <Button variant="outline" size="sm">
+                        <Button variant="outline" size="sm" onClick={() => handleViewAppointmentDetails('history-2')}>
                           <FileText className="h-4 w-4 mr-1" /> Детайли
                         </Button>
                       </div>
@@ -327,7 +368,7 @@ const PatientDashboard = () => {
                         <p className="text-sm text-gray-500">Д-р Петър Димитров</p>
                       </div>
                       <div>
-                        <Button variant="outline" size="sm">
+                        <Button variant="outline" size="sm" onClick={() => handleViewAppointmentDetails('history-3')}>
                           <FileText className="h-4 w-4 mr-1" /> Детайли
                         </Button>
                       </div>
@@ -343,9 +384,28 @@ const PatientDashboard = () => {
                   <CardTitle>Моят профил</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="h-96 flex items-center justify-center bg-gray-50 rounded">
-                    <User className="h-16 w-16 text-gray-300" />
-                    <span className="ml-2 text-gray-400">Тук ще бъде формата за профила</span>
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm font-medium text-gray-700">Име</label>
+                        <input type="text" defaultValue="Мария Георгиева" className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md" />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-700">Дата на раждане</label>
+                        <input type="date" defaultValue="1990-06-15" className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md" />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-700">Телефон</label>
+                        <input type="tel" defaultValue="+359 888 123 456" className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md" />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-700">Имейл</label>
+                        <input type="email" defaultValue="maria@example.com" className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md" />
+                      </div>
+                    </div>
+                    <div className="pt-4">
+                      <Button onClick={() => toast.success('Профилът е обновен успешно')}>Запази промените</Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
