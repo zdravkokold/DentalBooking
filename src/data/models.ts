@@ -40,6 +40,8 @@ export interface Appointment {
   startTime: string; // Format: "HH:MM"
   endTime: string; // Format: "HH:MM"
   status: "scheduled" | "completed" | "cancelled";
+  notes?: string;
+  createdAt: string;
 }
 
 export interface Patient {
@@ -47,4 +49,32 @@ export interface Patient {
   name: string;
   email: string;
   phone: string;
+  healthStatus?: string;
+  address?: string;
+  birthDate?: string;
+}
+
+export interface DentistAvailability {
+  id: string;
+  dentistId: string;
+  dayOfWeek: number; // 0 = Sunday, 1 = Monday, etc.
+  startTime: string;
+  endTime: string;
+  isAvailable: boolean;
+}
+
+export interface AppointmentHistory {
+  appointment: Appointment;
+  patient: Patient;
+  dentist: Dentist;
+  service: Service;
+}
+
+export interface Report {
+  startDate: string;
+  endDate: string;
+  totalAppointments: number;
+  completedAppointments: number;
+  cancelledAppointments: number;
+  patientCount: number;
 }

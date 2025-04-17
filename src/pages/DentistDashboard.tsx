@@ -1,26 +1,17 @@
-
 import React from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import {
-  Users,
-  CalendarDays,
-  CalendarCheck,
-  Clock,
-  CheckCircle,
-  User,
-  FileText,
-  MessageSquare,
-  AlertCircle,
-  Calendar,
-  ClipboardEdit,
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useAuth } from '@/context/AuthContext';
+import PatientManagement from '@/components/dentist/PatientManagement';
+import ScheduleManagement from '@/components/dentist/ScheduleManagement';
+import AppointmentHistory from '@/components/dentist/AppointmentHistory';
+import { format } from 'date-fns';
+import { bg } from 'date-fns/locale';
 
 const DentistDashboard = () => {
+  const { user } = useAuth();
   const today = new Date().toLocaleDateString('bg-BG', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
   
   return (
@@ -31,11 +22,11 @@ const DentistDashboard = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center">
             <Avatar className="h-16 w-16 mr-4 border-2 border-white">
-              <AvatarImage src="https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=400&auto=format&fit=crop&q=60&ixlib=rb-4.0.3" alt="Д-р Мария Иванова" />
-              <AvatarFallback>МИ</AvatarFallback>
+              <AvatarImage src="https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=400&auto=format&fit=crop&q=60&ixlib=rb-4.0.3" alt={`Д-р ${user?.name || 'Потребител'}`} />
+              <AvatarFallback>{user?.name?.substring(0, 2) || 'ДР'}</AvatarFallback>
             </Avatar>
             <div>
-              <h1 className="text-3xl font-bold text-white">Добре дошли, д-р Иванова</h1>
+              <h1 className="text-3xl font-bold text-white">Добре дошли, д-р {user?.name?.split(' ')[0] || 'Потребител'}</h1>
               <p className="text-dental-mint">{today}</p>
             </div>
           </div>
@@ -50,7 +41,7 @@ const DentistDashboard = () => {
               <TabsTrigger value="today">Днешни часове</TabsTrigger>
               <TabsTrigger value="schedule">График</TabsTrigger>
               <TabsTrigger value="patients">Моите пациенти</TabsTrigger>
-              <TabsTrigger value="records">Медицински записи</TabsTrigger>
+              <TabsTrigger value="history">История</TabsTrigger>
             </TabsList>
             
             {/* Today's Appointments Tab */}
@@ -221,50 +212,19 @@ const DentistDashboard = () => {
               </div>
             </TabsContent>
             
-            {/* Placeholder for other tabs */}
+            {/* Schedule Management Tab */}
             <TabsContent value="schedule" className="mt-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Моят график</CardTitle>
-                  <CardDescription>Седмичен и месечен календар</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-96 flex items-center justify-center bg-gray-50 rounded">
-                    <Calendar className="h-16 w-16 text-gray-300" />
-                    <span className="ml-2 text-gray-400">Тук ще бъде календарът</span>
-                  </div>
-                </CardContent>
-              </Card>
+              <ScheduleManagement />
             </TabsContent>
 
+            {/* Patient Management Tab */}
             <TabsContent value="patients" className="mt-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Моите пациенти</CardTitle>
-                  <CardDescription>Списък с всички пациенти под ваши грижи</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-96 flex items-center justify-center bg-gray-50 rounded">
-                    <Users className="h-16 w-16 text-gray-300" />
-                    <span className="ml-2 text-gray-400">Тук ще бъде таблицата с пациенти</span>
-                  </div>
-                </CardContent>
-              </Card>
+              <PatientManagement />
             </TabsContent>
 
-            <TabsContent value="records" className="mt-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Медицински записи</CardTitle>
-                  <CardDescription>История на пациентите и медицински бележки</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-96 flex items-center justify-center bg-gray-50 rounded">
-                    <FileText className="h-16 w-16 text-gray-300" />
-                    <span className="ml-2 text-gray-400">Тук ще бъдат медицинските записи</span>
-                  </div>
-                </CardContent>
-              </Card>
+            {/* Appointment History Tab */}
+            <TabsContent value="history" className="mt-6">
+              <AppointmentHistory />
             </TabsContent>
           </Tabs>
         </div>
