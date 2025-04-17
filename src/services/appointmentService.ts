@@ -13,7 +13,7 @@ export const appointmentService = {
         .select('*')
         .eq('dentist_id', dentistId)
         .order('date', { ascending: true })
-        .order('start_time', { ascending: true });
+        .order('time', { ascending: true });
 
       if (error) {
         toast.error('Грешка при зареждане на часове: ' + error.message);
@@ -28,7 +28,7 @@ export const appointmentService = {
         date: item.date,
         startTime: item.time.split('-')[0].trim(),
         endTime: item.time.split('-')[1].trim(),
-        status: item.status || 'scheduled',
+        status: (item.status || 'scheduled') as "scheduled" | "completed" | "cancelled", // Fix type
         notes: item.notes,
         createdAt: item.created_at,
       }));
@@ -61,7 +61,7 @@ export const appointmentService = {
         date: item.date,
         startTime: item.time.split('-')[0].trim(),
         endTime: item.time.split('-')[1].trim(),
-        status: item.status || 'scheduled',
+        status: (item.status || 'scheduled') as "scheduled" | "completed" | "cancelled", // Fix type
         notes: item.notes,
         createdAt: item.created_at,
       }));
@@ -78,9 +78,9 @@ export const appointmentService = {
         .from('appointments')
         .select(`
           *,
-          dentists:dentist_id(*),
-          profiles:patient_id(id, first_name, last_name, email, phone, health_status),
-          services:service_id(*)
+          dentist:dentist_id(id, profile_id, specialization, bio, years_of_experience),
+          patient:patient_id(id, first_name, last_name, email, phone, health_status),
+          service:service_id(id, name, description, price, duration)
         `)
         .order('date', { ascending: false });
 
@@ -104,11 +104,16 @@ export const appointmentService = {
         throw error;
       }
 
-      return data.map(item => {
-        const dentist = item.dentists;
-        const patient = item.profiles;
-        const service = item.services;
+      // No data check
+      if (!data) return [];
 
+      return data.map(item => {
+        // Safely extract related data
+        const dentist = item.dentist || {};
+        const patient = item.patient || {};
+        const service = item.service || {};
+        
+        // Construct the appointment history objects with proper type checking
         return {
           appointment: {
             id: item.id,
@@ -116,32 +121,34 @@ export const appointmentService = {
             dentistId: item.dentist_id,
             serviceId: item.service_id,
             date: item.date,
-            startTime: item.time.split('-')[0].trim(),
-            endTime: item.time.split('-')[1].trim(),
-            status: item.status || 'scheduled',
-            notes: item.notes,
+            startTime: item.time?.split('-')[0]?.trim() || '',
+            endTime: item.time?.split('-')[1]?.trim() || '',
+            status: (item.status || 'scheduled') as "scheduled" | "completed" | "cancelled",
+            notes: item.notes || '',
             createdAt: item.created_at,
           },
           patient: {
-            id: patient.id,
+            id: patient.id || '',
             name: `${patient.first_name || ''} ${patient.last_name || ''}`.trim(),
             email: patient.email || '',
             phone: patient.phone || '',
             healthStatus: patient.health_status || '',
+            address: '',  // Default values for optional fields
+            birthDate: '',
           },
           dentist: {
-            id: dentist.id,
+            id: dentist.id || '',
             name: dentist.name || '',
             specialization: dentist.specialization || '',
             imageUrl: '',
             bio: dentist.bio || '',
-            rating: dentist.rating || 0,
+            rating: 0,  // Default rating
             yearsOfExperience: dentist.years_of_experience || 0,
             education: '',
             languages: [],
           },
           service: {
-            id: service.id,
+            id: service.id || '',
             name: service.name || '',
             description: service.description || '',
             price: service.price || 0,

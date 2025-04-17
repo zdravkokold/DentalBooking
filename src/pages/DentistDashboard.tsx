@@ -1,12 +1,16 @@
+
 import React from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import PatientManagement from '@/components/dentist/PatientManagement';
 import ScheduleManagement from '@/components/dentist/ScheduleManagement';
 import AppointmentHistory from '@/components/dentist/AppointmentHistory';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
+import { CalendarDays, Clock, CheckCircle, AlertCircle, Calendar, MessageSquare, ClipboardEdit } from 'lucide-react';
 import { format } from 'date-fns';
 import { bg } from 'date-fns/locale';
 

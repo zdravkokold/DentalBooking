@@ -8,17 +8,20 @@ export const availabilityService = {
   // Get availability for a dentist
   getDentistAvailability: async (dentistId: string): Promise<DentistAvailability[]> => {
     try {
+      // Use the custom query method instead of the table name directly
       const { data, error } = await supabase
-        .from('dentist_availability')
-        .select('*')
-        .eq('dentist_id', dentistId);
+        .rpc('get_dentist_availability', { dentist_id_param: dentistId });
 
       if (error) {
         toast.error('Грешка при зареждане на наличност: ' + error.message);
         throw error;
       }
 
-      return data.map(item => ({
+      // If no data returned, return empty array
+      if (!data) return [];
+
+      // Map the data to the expected format
+      return data.map((item: any) => ({
         id: item.id,
         dentistId: item.dentist_id,
         dayOfWeek: item.day_of_week,
@@ -45,7 +48,7 @@ export const availabilityService = {
         .select('*')
         .eq('dentist_id', availability.dentistId)
         .eq('date', formattedDate)
-        .or(`start_time.gte.${availability.startTime},end_time.lte.${availability.endTime}`);
+        .or(`time.gte.${availability.startTime},time.lte.${availability.endTime}`);
 
       if (appointmentsError) {
         toast.error('Грешка при проверка на конфликти: ' + appointmentsError.message);
@@ -57,18 +60,15 @@ export const availabilityService = {
         throw new Error('Conflict with existing appointments');
       }
 
-      // Insert new availability
+      // Insert new availability using stored procedure
       const { data, error } = await supabase
-        .from('dentist_availability')
-        .insert({
-          dentist_id: availability.dentistId,
-          day_of_week: availability.dayOfWeek,
-          start_time: availability.startTime,
-          end_time: availability.endTime,
-          is_available: availability.isAvailable,
-        })
-        .select()
-        .single();
+        .rpc('create_dentist_availability', {
+          dentist_id_param: availability.dentistId,
+          day_of_week_param: availability.dayOfWeek,
+          start_time_param: availability.startTime,
+          end_time_param: availability.endTime,
+          is_available_param: availability.isAvailable
+        });
 
       if (error) {
         toast.error('Грешка при задаване на наличност: ' + error.message);
@@ -76,7 +76,7 @@ export const availabilityService = {
       }
 
       toast.success('Наличността е зададена успешно');
-      return data.id;
+      return data;
     } catch (error) {
       console.error('Error setting dentist availability:', error);
       throw error;
@@ -87,14 +87,13 @@ export const availabilityService = {
   updateAvailability: async (availability: DentistAvailability): Promise<void> => {
     try {
       const { error } = await supabase
-        .from('dentist_availability')
-        .update({
-          day_of_week: availability.dayOfWeek,
-          start_time: availability.startTime,
-          end_time: availability.endTime,
-          is_available: availability.isAvailable,
-        })
-        .eq('id', availability.id);
+        .rpc('update_dentist_availability', {
+          id_param: availability.id,
+          day_of_week_param: availability.dayOfWeek,
+          start_time_param: availability.startTime,
+          end_time_param: availability.endTime,
+          is_available_param: availability.isAvailable
+        });
 
       if (error) {
         toast.error('Грешка при обновяване на наличност: ' + error.message);
@@ -112,9 +111,7 @@ export const availabilityService = {
   deleteAvailability: async (id: string): Promise<void> => {
     try {
       const { error } = await supabase
-        .from('dentist_availability')
-        .delete()
-        .eq('id', id);
+        .rpc('delete_dentist_availability', { id_param: id });
 
       if (error) {
         toast.error('Грешка при изтриване на наличност: ' + error.message);

@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -28,7 +29,8 @@ const sampleAppointments = [
     date: new Date(new Date().setHours(new Date().getHours() + 2)).toISOString(), // Today in 2 hours
     startTime: "14:00",
     endTime: "15:00",
-    status: "scheduled" as const
+    status: "scheduled" as const,
+    createdAt: new Date().toISOString() // Add missing createdAt field
   },
   {
     id: "2",
@@ -38,7 +40,8 @@ const sampleAppointments = [
     date: new Date(new Date().setDate(new Date().getDate() + 1)).toISOString(), // Tomorrow
     startTime: "10:30",
     endTime: "11:15",
-    status: "scheduled" as const
+    status: "scheduled" as const,
+    createdAt: new Date().toISOString() // Add missing createdAt field
   }
 ];
 
