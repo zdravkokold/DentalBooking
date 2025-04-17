@@ -17,9 +17,11 @@ export const patientService = {
         throw error;
       }
 
+      if (!data) return [];
+
       // Map the returned data to the Patient interface
       return data.map(profile => ({
-        id: profile.id,
+        id: profile.id || '',
         name: `${profile.first_name || ''} ${profile.last_name || ''}`.trim(),
         email: profile.email || '',
         phone: profile.phone || '',
@@ -51,8 +53,10 @@ export const patientService = {
         throw error;
       }
 
+      if (!data) return null;
+
       return {
-        id: data.id,
+        id: data.id || '',
         name: `${data.first_name || ''} ${data.last_name || ''}`.trim(),
         email: data.email || '',
         phone: data.phone || '',

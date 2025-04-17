@@ -1,4 +1,3 @@
-
 // Types and interfaces for the application
 
 export interface Dentist {
@@ -31,6 +30,8 @@ export interface Service {
   imageUrl: string;
 }
 
+export type AppointmentStatus = 'scheduled' | 'completed' | 'cancelled';
+
 export interface Appointment {
   id: string;
   patientId: string;
@@ -39,7 +40,7 @@ export interface Appointment {
   date: string; // ISO date string
   startTime: string; // Format: "HH:MM"
   endTime: string; // Format: "HH:MM"
-  status: "scheduled" | "completed" | "cancelled";
+  status: AppointmentStatus;
   notes?: string;
   createdAt: string;
 }
@@ -57,7 +58,7 @@ export interface Patient {
 export interface DentistAvailability {
   id: string;
   dentistId: string;
-  dayOfWeek: number; // 0 = Sunday, 1 = Monday, etc.
+  dayOfWeek: number;
   startTime: string;
   endTime: string;
   isAvailable: boolean;

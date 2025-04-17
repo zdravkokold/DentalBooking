@@ -8,7 +8,6 @@ export const availabilityService = {
   // Get availability for a dentist
   getDentistAvailability: async (dentistId: string): Promise<DentistAvailability[]> => {
     try {
-      // Use the custom query method instead of the table name directly
       const { data, error } = await supabase
         .rpc('get_dentist_availability', { dentist_id_param: dentistId });
 

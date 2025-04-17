@@ -16,7 +16,6 @@ import PatientDashboard from "./pages/PatientDashboard";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import { AuthProvider, useAuth } from "./context/AuthContext";
-import ProtectedRoute from "./components/ProtectedRoute";
 import { checkUpcomingAppointments } from "./services/notificationService";
 
 // Sample appointment data for demo purposes - replace with actual API call
@@ -30,7 +29,7 @@ const sampleAppointments = [
     startTime: "14:00",
     endTime: "15:00",
     status: "scheduled" as const,
-    createdAt: new Date().toISOString() // Add missing createdAt field
+    createdAt: new Date().toISOString() // Added createdAt field
   },
   {
     id: "2",
@@ -41,7 +40,7 @@ const sampleAppointments = [
     startTime: "10:30",
     endTime: "11:15",
     status: "scheduled" as const,
-    createdAt: new Date().toISOString() // Add missing createdAt field
+    createdAt: new Date().toISOString() // Added createdAt field
   }
 ];
 
@@ -58,14 +57,6 @@ const AppContent = () => {
     }, 3000); // Show notification after 3 seconds for demo purposes
   }, []);
 
-  // Redirect the user based on their role when they login
-  useEffect(() => {
-    if (isAuthenticated && user) {
-      // This will handle navigation after login if the user tries to access the root route
-      // Other routes are handled by the ProtectedRoute component
-    }
-  }, [isAuthenticated, user]);
-
   return (
     <>
       <Toaster />
@@ -79,31 +70,10 @@ const AppContent = () => {
         <Route path="/dentists/:id" element={<DentistDetail />} />
         <Route path="/services" element={<Services />} />
         
-        {/* Protected Routes */}
-        <Route 
-          path="/admin" 
-          element={
-            <ProtectedRoute allowedRoles={['admin']}>
-              <AdminDashboard />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/dentist" 
-          element={
-            <ProtectedRoute allowedRoles={['dentist']}>
-              <DentistDashboard />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/patient" 
-          element={
-            <ProtectedRoute allowedRoles={['patient']}>
-              <PatientDashboard />
-            </ProtectedRoute>
-          } 
-        />
+        {/* Previously protected routes, now accessible for demo */}
+        <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/dentist" element={<DentistDashboard />} />
+        <Route path="/patient" element={<PatientDashboard />} />
         
         {/* Catch-all route */}
         <Route path="*" element={<NotFound />} />

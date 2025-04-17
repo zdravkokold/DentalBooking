@@ -1,233 +1,181 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '@/context/AuthContext';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { useAuth } from '@/context/AuthContext';
+import { Calendar, CalendarDays, Clock, CheckCircle, AlertCircle, ClipboardEdit, MessageSquare } from 'lucide-react';
+import { appointmentService } from '@/services/appointmentService';
+import { Appointment } from '@/data/models';
+
+// Import dentist-specific components
+import AppointmentHistory from '@/components/dentist/AppointmentHistory';
 import PatientManagement from '@/components/dentist/PatientManagement';
 import ScheduleManagement from '@/components/dentist/ScheduleManagement';
-import AppointmentHistory from '@/components/dentist/AppointmentHistory';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
-import { CalendarDays, Clock, CheckCircle, AlertCircle, Calendar, MessageSquare, ClipboardEdit } from 'lucide-react';
-import { format } from 'date-fns';
-import { bg } from 'date-fns/locale';
 
 const DentistDashboard = () => {
   const { user } = useAuth();
-  const today = new Date().toLocaleDateString('bg-BG', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-  
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [stats, setStats] = useState({
+    upcoming: 0,
+    today: 0,
+    completed: 0,
+    cancelled: 0
+  });
+
+  useEffect(() => {
+    const loadAppointments = async () => {
+      try {
+        // For demo purposes, we'll use a hardcoded dentist ID
+        const dentistId = "d1"; // Replace with actual dentist ID when available
+        const appointmentsData = await appointmentService.getDentistAppointments(dentistId);
+        setAppointments(appointmentsData);
+        
+        // Calculate statistics
+        const today = new Date().toISOString().split('T')[0];
+        setStats({
+          upcoming: appointmentsData.filter(a => a.date > today && a.status === 'scheduled').length,
+          today: appointmentsData.filter(a => a.date === today && a.status === 'scheduled').length,
+          completed: appointmentsData.filter(a => a.status === 'completed').length,
+          cancelled: appointmentsData.filter(a => a.status === 'cancelled').length
+        });
+      } catch (error) {
+        console.error('Failed to load appointments:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadAppointments();
+  }, []);
+
+  // For demo purposes, we'll use a hardcoded dentist name
+  const dentistName = user?.name || "Д-р Иванов";
+
   return (
     <div className="flex flex-col min-h-screen">
       <Navbar />
       
-      <div className="bg-dental-teal py-6">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center">
-            <Avatar className="h-16 w-16 mr-4 border-2 border-white">
-              <AvatarImage src="https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=400&auto=format&fit=crop&q=60&ixlib=rb-4.0.3" alt={`Д-р ${user?.name || 'Потребител'}`} />
-              <AvatarFallback>{user?.name?.substring(0, 2) || 'ДР'}</AvatarFallback>
-            </Avatar>
-            <div>
-              <h1 className="text-3xl font-bold text-white">Добре дошли, д-р {user?.name?.split(' ')[0] || 'Потребител'}</h1>
-              <p className="text-dental-mint">{today}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <main className="flex-grow bg-dental-lightGray">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {/* Dashboard Navigation Tabs */}
-          <Tabs defaultValue="today" className="mb-6">
-            <TabsList className="bg-white">
-              <TabsTrigger value="today">Днешни часове</TabsTrigger>
+          <h1 className="text-2xl font-bold text-gray-800 mb-6">
+            Здравейте, {dentistName}!
+          </h1>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            {/* Stats Cards */}
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Предстоящи часове</p>
+                    <p className="text-2xl font-bold">{stats.upcoming}</p>
+                  </div>
+                  <CalendarDays className="h-8 w-8 text-dental-teal" />
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Часове днес</p>
+                    <p className="text-2xl font-bold">{stats.today}</p>
+                  </div>
+                  <Clock className="h-8 w-8 text-dental-teal" />
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Завършени</p>
+                    <p className="text-2xl font-bold">{stats.completed}</p>
+                  </div>
+                  <CheckCircle className="h-8 w-8 text-dental-teal" />
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Отменени</p>
+                    <p className="text-2xl font-bold">{stats.cancelled}</p>
+                  </div>
+                  <AlertCircle className="h-8 w-8 text-dental-teal" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+          
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle>Предстоящи часове</CardTitle>
+              <CardDescription>Прегледайте насрочените часове за следващите дни</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <p>Зареждане...</p>
+              ) : appointments.length > 0 ? (
+                <div className="space-y-4">
+                  {appointments.slice(0, 5).map((appointment) => (
+                    <div 
+                      key={appointment.id} 
+                      className="flex justify-between items-center p-4 rounded-lg border border-gray-200 hover:bg-gray-50"
+                    >
+                      <div>
+                        <p className="font-medium">Пациент #{appointment.patientId}</p>
+                        <p className="text-sm text-gray-500">
+                          {new Date(appointment.date).toLocaleDateString('bg-BG')}, {appointment.startTime}
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button variant="outline" size="sm">
+                          <ClipboardEdit className="h-4 w-4 mr-1" />
+                          Детайли
+                        </Button>
+                        <Button variant="outline" size="sm">
+                          <Calendar className="h-4 w-4 mr-1" />
+                          Пренасрочи
+                        </Button>
+                        <Button variant="outline" size="sm">
+                          <MessageSquare className="h-4 w-4 mr-1" />
+                          Напомни
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-center py-8 text-gray-500">Няма предстоящи часове.</p>
+              )}
+            </CardContent>
+          </Card>
+          
+          <Tabs defaultValue="schedule">
+            <TabsList className="mb-6">
               <TabsTrigger value="schedule">График</TabsTrigger>
-              <TabsTrigger value="patients">Моите пациенти</TabsTrigger>
+              <TabsTrigger value="patients">Пациенти</TabsTrigger>
               <TabsTrigger value="history">История</TabsTrigger>
             </TabsList>
             
-            {/* Today's Appointments Tab */}
-            <TabsContent value="today" className="mt-6">
-              {/* Stats Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <Card>
-                  <CardContent className="flex items-center p-6">
-                    <div className="bg-dental-teal/10 p-3 rounded-full mr-4">
-                      <CalendarDays className="h-8 w-8 text-dental-teal" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-500">Часове днес</p>
-                      <h3 className="text-2xl font-bold">8</h3>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardContent className="flex items-center p-6">
-                    <div className="bg-dental-teal/10 p-3 rounded-full mr-4">
-                      <Clock className="h-8 w-8 text-dental-teal" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-500">Следващ час</p>
-                      <h3 className="text-2xl font-bold">13:30</h3>
-                      <p className="text-xs">Иван Петров</p>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardContent className="flex items-center p-6">
-                    <div className="bg-dental-teal/10 p-3 rounded-full mr-4">
-                      <CheckCircle className="h-8 w-8 text-dental-teal" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-500">Завършени</p>
-                      <h3 className="text-2xl font-bold">3</h3>
-                      <p className="text-xs">от 8 планирани</p>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardContent className="flex items-center p-6">
-                    <div className="bg-dental-teal/10 p-3 rounded-full mr-4">
-                      <AlertCircle className="h-8 w-8 text-dental-teal" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-500">Спешни случаи</p>
-                      <h3 className="text-2xl font-bold">1</h3>
-                      <p className="text-xs text-red-500">14:45</p>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Today's Schedule */}
-              <Card className="mb-8">
-                <CardHeader>
-                  <CardTitle>Днешен график</CardTitle>
-                  <CardDescription>Всички записани часове за днес</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex items-center p-3 bg-green-50 border-l-4 border-green-400 rounded">
-                      <div className="mr-4">
-                        <p className="font-bold">09:00</p>
-                        <p className="text-xs">30 мин</p>
-                      </div>
-                      <div className="flex-grow">
-                        <p className="font-medium">Петър Димитров</p>
-                        <p className="text-sm text-gray-500">Профилактичен преглед</p>
-                      </div>
-                      <div className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded">
-                        Завършен
-                      </div>
-                    </div>
-
-                    <div className="flex items-center p-3 bg-green-50 border-l-4 border-green-400 rounded">
-                      <div className="mr-4">
-                        <p className="font-bold">10:00</p>
-                        <p className="text-xs">60 мин</p>
-                      </div>
-                      <div className="flex-grow">
-                        <p className="font-medium">Мария Стоянова</p>
-                        <p className="text-sm text-gray-500">Лечение на кариес</p>
-                      </div>
-                      <div className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded">
-                        Завършен
-                      </div>
-                    </div>
-
-                    <div className="flex items-center p-3 bg-green-50 border-l-4 border-green-400 rounded">
-                      <div className="mr-4">
-                        <p className="font-bold">11:30</p>
-                        <p className="text-xs">45 мин</p>
-                      </div>
-                      <div className="flex-grow">
-                        <p className="font-medium">Георги Николов</p>
-                        <p className="text-sm text-gray-500">Професионално почистване</p>
-                      </div>
-                      <div className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded">
-                        Завършен
-                      </div>
-                    </div>
-
-                    <div className="flex items-center p-3 bg-blue-50 border-l-4 border-blue-400 rounded">
-                      <div className="mr-4">
-                        <p className="font-bold">13:30</p>
-                        <p className="text-xs">45 мин</p>
-                      </div>
-                      <div className="flex-grow">
-                        <p className="font-medium">Иван Петров</p>
-                        <p className="text-sm text-gray-500">Лечение на кариес</p>
-                      </div>
-                      <div className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded">
-                        Предстои
-                      </div>
-                    </div>
-
-                    <div className="flex items-center p-3 bg-red-50 border-l-4 border-red-400 rounded">
-                      <div className="mr-4">
-                        <p className="font-bold">14:45</p>
-                        <p className="text-xs">30 мин</p>
-                      </div>
-                      <div className="flex-grow">
-                        <p className="font-medium">Стоян Тодоров</p>
-                        <p className="text-sm text-gray-500">Спешен преглед - зъбна болка</p>
-                      </div>
-                      <div className="bg-red-100 text-red-800 text-xs font-medium px-2.5 py-0.5 rounded">
-                        Спешен
-                      </div>
-                    </div>
-
-                    <div className="flex items-center p-3 bg-blue-50 border-l-4 border-blue-400 rounded">
-                      <div className="mr-4">
-                        <p className="font-bold">15:30</p>
-                        <p className="text-xs">60 мин</p>
-                      </div>
-                      <div className="flex-grow">
-                        <p className="font-medium">Елена Тодорова</p>
-                        <p className="text-sm text-gray-500">Поставяне на имплант</p>
-                      </div>
-                      <div className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded">
-                        Предстои
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Quick Actions */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Button className="flex items-center justify-center gap-2 h-auto py-3">
-                  <ClipboardEdit className="h-4 w-4" />
-                  <span>Добави медицински запис</span>
-                </Button>
-                <Button className="flex items-center justify-center gap-2 h-auto py-3">
-                  <Calendar className="h-4 w-4" />
-                  <span>Промени график</span>
-                </Button>
-                <Button className="flex items-center justify-center gap-2 h-auto py-3">
-                  <MessageSquare className="h-4 w-4" />
-                  <span>Изпрати съобщение</span>
-                </Button>
-              </div>
-            </TabsContent>
-            
-            {/* Schedule Management Tab */}
-            <TabsContent value="schedule" className="mt-6">
+            <TabsContent value="schedule">
               <ScheduleManagement />
             </TabsContent>
-
-            {/* Patient Management Tab */}
-            <TabsContent value="patients" className="mt-6">
+            
+            <TabsContent value="patients">
               <PatientManagement />
             </TabsContent>
-
-            {/* Appointment History Tab */}
-            <TabsContent value="history" className="mt-6">
+            
+            <TabsContent value="history">
               <AppointmentHistory />
             </TabsContent>
           </Tabs>

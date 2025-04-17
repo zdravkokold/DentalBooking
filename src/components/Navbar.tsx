@@ -1,11 +1,19 @@
 
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Menu, X, Calendar, User, Bell } from "lucide-react";
+import { Menu, X, Calendar, User, Bell, LayoutDashboard } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "sonner";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -80,6 +88,26 @@ const Navbar = () => {
             <Button variant="ghost" size="icon" onClick={handleCalendarClick}>
               <Calendar className="h-5 w-5 text-gray-600" />
             </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button className="bg-dental-teal hover:bg-opacity-90 text-white">
+                  <LayoutDashboard className="h-5 w-5 mr-2" /> Табла
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuLabel>Достъп до табла</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => navigate('/dentist')}>
+                  Дентален лекар
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/patient')}>
+                  Пациент
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/admin')}>
+                  Администратор
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Button className="bg-dental-teal hover:bg-opacity-90 text-white" onClick={handleLoginClick}>
               <User className="h-5 w-5 mr-2" /> Вход
             </Button>
@@ -126,6 +154,27 @@ const Navbar = () => {
             onClick={() => setIsOpen(false)}
           >
             Услуги
+          </Link>
+          <Link
+            to="/dentist"
+            className="block px-3 py-2 text-base font-medium text-gray-700 hover:bg-gray-50 hover:text-dental-teal"
+            onClick={() => setIsOpen(false)}
+          >
+            Дентален лекар Табло
+          </Link>
+          <Link
+            to="/patient"
+            className="block px-3 py-2 text-base font-medium text-gray-700 hover:bg-gray-50 hover:text-dental-teal"
+            onClick={() => setIsOpen(false)}
+          >
+            Пациент Табло
+          </Link>
+          <Link
+            to="/admin"
+            className="block px-3 py-2 text-base font-medium text-gray-700 hover:bg-gray-50 hover:text-dental-teal"
+            onClick={() => setIsOpen(false)}
+          >
+            Администратор Табло
           </Link>
           <div className="pt-4 pb-3 border-t border-gray-200">
             <div className="flex items-center space-x-2 px-3 py-2">
