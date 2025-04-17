@@ -168,7 +168,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
 
       toast.success('Регистрацията е успешна!');
-      return data;
+      // Return void instead of data to match the function signature
     } catch (error) {
       console.error('Registration error:', error);
       throw error;
