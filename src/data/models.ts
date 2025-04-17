@@ -1,3 +1,4 @@
+
 // Types and interfaces for the application
 
 export interface Dentist {
@@ -10,6 +11,7 @@ export interface Dentist {
   yearsOfExperience: number;
   education: string;
   languages: string[];
+  experience?: number; // Adding optional field for compatibility
 }
 
 export interface AppointmentSlot {

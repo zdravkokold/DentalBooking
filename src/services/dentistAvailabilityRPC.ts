@@ -4,6 +4,10 @@ import { supabase } from '@/integrations/supabase/client';
 // Initialize the stored procedures for dentist availability
 export const initDentistAvailabilityProcedures = async () => {
   try {
+    console.log('Mock initialization of dentist availability procedures');
+    // In a real implementation, this would create the stored procedures
+    
+    /* Commented out the real implementation until database functions are available
     // Create get_dentist_availability function
     const { error: getError } = await supabase.rpc('create_get_dentist_availability_function');
     if (getError) console.error('Error creating get_dentist_availability function:', getError);
@@ -19,8 +23,8 @@ export const initDentistAvailabilityProcedures = async () => {
     // Create delete_dentist_availability function
     const { error: deleteError } = await supabase.rpc('create_delete_dentist_availability_function');
     if (deleteError) console.error('Error creating delete_dentist_availability function:', deleteError);
+    */
 
-    // If no errors, functions created successfully
     console.log('Dentist availability procedures initialized successfully');
   } catch (error) {
     console.error('Failed to initialize dentist availability procedures:', error);

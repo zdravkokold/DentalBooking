@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { format, parseISO, isAfter, isBefore, isEqual } from 'date-fns';
@@ -205,7 +204,6 @@ const AppointmentHistoryComponent = () => {
         </CardContent>
       </Card>
 
-      {/* Appointment Details Dialog */}
       <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -273,7 +271,6 @@ const AppointmentHistoryComponent = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Report Dialog */}
       <Dialog open={isReportDialogOpen} onOpenChange={setIsReportDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
