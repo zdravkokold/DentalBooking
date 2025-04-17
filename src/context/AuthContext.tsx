@@ -34,45 +34,33 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const navigate = useNavigate();
   
   // Check for existing session on load
   useEffect(() => {
     const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (session) {
-        try {
-          // Fetch user profile from our profiles table
-          const { data: profile, error: profileError } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-          
-          if (profileError || !profile) {
-            console.error('Failed to fetch profile:', profileError);
-            setIsLoading(false);
-            return;
-          }
-          
-          const authenticatedUser = {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (session) {
+          // For demo purposes, create a mock user
+          const mockUser = {
             id: session.user.id,
-            name: `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || session.user.email?.split('@')[0] || 'User',
+            name: session.user.email?.split('@')[0] || 'User',
             email: session.user.email || '',
-            role: profile.role as UserRole,
+            role: 'patient' as UserRole,
             token: session.access_token,
           };
           
-          setUser(authenticatedUser);
-        } catch (error) {
-          console.error('Failed to parse session:', error);
-          await supabase.auth.signOut();
+          setUser(mockUser);
+          console.log("Mock user set:", mockUser);
         }
+      } catch (error) {
+        console.error('Failed to check auth:', error);
+      } finally {
+        setIsLoading(false);
       }
-      
-      setIsLoading(false);
     };
     
     checkAuth();
@@ -80,36 +68,24 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        setIsLoading(true);
+        console.log("Auth state changed:", event);
         
         if (event === 'SIGNED_IN' && session) {
-          // Fetch user profile from our profiles table
-          const { data: profile, error: profileError } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-          
-          if (profileError || !profile) {
-            console.error('Failed to fetch profile:', profileError);
-            setIsLoading(false);
-            return;
-          }
-          
-          const authenticatedUser = {
+          // Create a mock user for demo purposes
+          const mockUser = {
             id: session.user.id,
-            name: `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || session.user.email?.split('@')[0] || 'User',
+            name: session.user.email?.split('@')[0] || 'User',
             email: session.user.email || '',
-            role: profile.role as UserRole,
+            role: 'patient' as UserRole,
             token: session.access_token,
           };
           
-          setUser(authenticatedUser);
+          setUser(mockUser);
+          console.log("User signed in:", mockUser);
         } else if (event === 'SIGNED_OUT') {
           setUser(null);
+          console.log("User signed out");
         }
-        
-        setIsLoading(false);
       }
     );
     
@@ -136,7 +112,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         throw new Error('No session returned after login');
       }
 
-      // Navigation will happen automatically via the onAuthStateChange listener
       toast.success('Успешен вход');
       
     } catch (error) {
@@ -168,7 +143,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
 
       toast.success('Регистрацията е успешна!');
-      // Return void instead of data to match the function signature
     } catch (error) {
       console.error('Registration error:', error);
       throw error;

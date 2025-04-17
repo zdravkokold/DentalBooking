@@ -1,6 +1,4 @@
 
-import { supabase } from '@/integrations/supabase/client';
-
 // Initialize the stored procedures for dentist availability
 export const initDentistAvailabilityProcedures = async () => {
   try {
