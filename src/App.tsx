@@ -18,44 +18,33 @@ import Register from "./pages/Register";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { checkUpcomingAppointments } from "./services/notificationService";
 
-// Sample appointment data for demo purposes - replace with actual API call
-const sampleAppointments = [
-  {
-    id: "1",
-    patientId: "p1",
-    dentistId: "d1",
-    serviceId: "s1",
-    date: new Date(new Date().setHours(new Date().getHours() + 2)).toISOString(), // Today in 2 hours
-    startTime: "14:00",
-    endTime: "15:00",
-    status: "scheduled" as const,
-    createdAt: new Date().toISOString() // Added createdAt field
-  },
-  {
-    id: "2",
-    patientId: "p1",
-    dentistId: "d2",
-    serviceId: "s2",
-    date: new Date(new Date().setDate(new Date().getDate() + 1)).toISOString(), // Tomorrow
-    startTime: "10:30",
-    endTime: "11:15",
-    status: "scheduled" as const,
-    createdAt: new Date().toISOString() // Added createdAt field
+// Configure a new query client with error handling
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      // Add retry: false to prevent excessive API calls when errors occur
+      retry: false,
+      // Add error handling for debugging
+      onError: (error) => {
+        console.error("Query error:", error);
+      }
+    },
+    mutations: {
+      // Add error handling for debugging
+      onError: (error) => {
+        console.error("Mutation error:", error);
+      }
+    }
   }
-];
-
-const queryClient = new QueryClient();
+});
 
 const AppContent = () => {
   const { user, isAuthenticated } = useAuth();
   
   useEffect(() => {
-    // Check for upcoming appointments when the app loads
-    // In a real app, you would fetch this from your API
-    setTimeout(() => {
-      checkUpcomingAppointments(sampleAppointments);
-    }, 3000); // Show notification after 3 seconds for demo purposes
-  }, []);
+    // For debugging
+    console.log("App content rendered, auth state:", { user, isAuthenticated });
+  }, [user, isAuthenticated]);
 
   return (
     <>
@@ -70,7 +59,7 @@ const AppContent = () => {
         <Route path="/dentists/:id" element={<DentistDetail />} />
         <Route path="/services" element={<Services />} />
         
-        {/* Previously protected routes, now accessible for demo */}
+        {/* All dashboards accessible for demo */}
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/dentist" element={<DentistDashboard />} />
         <Route path="/patient" element={<PatientDashboard />} />
@@ -82,14 +71,16 @@ const AppContent = () => {
   );
 };
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <BrowserRouter>
-      <AuthProvider>
-        <AppContent />
-      </AuthProvider>
-    </BrowserRouter>
-  </QueryClientProvider>
-);
+const App = () => {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
+        <AuthProvider>
+          <AppContent />
+        </AuthProvider>
+      </BrowserRouter>
+    </QueryClientProvider>
+  );
+};
 
 export default App;

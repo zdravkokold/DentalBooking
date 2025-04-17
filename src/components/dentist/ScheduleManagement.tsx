@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -22,7 +21,6 @@ import { availabilityService } from '@/services/availabilityService';
 import { patientService } from '@/services/patientService';
 import { appointmentService } from '@/services/appointmentService';
 import { DentistAvailability, Patient } from '@/data/models';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 const daysOfWeek = [
@@ -49,10 +47,8 @@ const ScheduleManagement = () => {
   const [selectedServiceId, setSelectedServiceId] = useState<string>('');
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<string | null>(null);
 
-  // Sample dentist ID for demo
   const dentistId = 'd1';
 
-  // Queries
   const { data: availabilities = [], isLoading: isLoadingAvailabilities, refetch: refetchAvailabilities } = 
     useQuery({
       queryKey: ['dentistAvailability', dentistId],
@@ -72,18 +68,16 @@ const ScheduleManagement = () => {
       enabled: !!selectedDate
     });
 
-  // Mock services for demo
   const services = [
     { id: 's1', name: 'Преглед', price: 50, duration: 30 },
     { id: 's2', name: 'Почистване на зъбен камък', price: 80, duration: 45 },
     { id: 's3', name: 'Избелване', price: 150, duration: 60 }
   ];
 
-  // Calculate available time slots based on availability and existing appointments
   const getAvailableTimeSlots = () => {
     if (!selectedDate) return [];
 
-    const dayOfWeekIndex = selectedDate.getDay(); // 0 for Sunday, 1 for Monday, etc.
+    const dayOfWeekIndex = selectedDate.getDay();
     const availabilityForDay = availabilities.filter(a => a.dayOfWeek === dayOfWeekIndex && a.isAvailable);
 
     if (!availabilityForDay.length) return [];
@@ -95,13 +89,12 @@ const ScheduleManagement = () => {
     availabilityForDay.forEach(availability => {
       const startMinutes = getMinutesFromTimeString(availability.startTime);
       const endMinutes = getMinutesFromTimeString(availability.endTime);
-      const slotDuration = 30; // 30 minute slots
+      const slotDuration = 30;
 
       for (let m = startMinutes; m < endMinutes; m += slotDuration) {
         const slotTime = getTimeStringFromMinutes(m);
         const slotEndTime = getTimeStringFromMinutes(m + slotDuration);
         
-        // Check if slot conflicts with existing appointments
         const isSlotAvailable = !appointmentsForDay.some(appointment => {
           const apptStart = getMinutesFromTimeString(appointment.startTime);
           const apptEnd = getMinutesFromTimeString(appointment.endTime);
@@ -118,7 +111,6 @@ const ScheduleManagement = () => {
     return slots;
   };
 
-  // Helper functions for time conversion
   const getMinutesFromTimeString = (timeString: string): number => {
     const [hours, minutes] = timeString.split(':').map(Number);
     return hours * 60 + minutes;
@@ -130,7 +122,6 @@ const ScheduleManagement = () => {
     return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
   };
 
-  // Functions for managing availability
   const handleAddAvailability = () => {
     setSelectedAvailability(null);
     setDayOfWeek(1);
@@ -153,8 +144,12 @@ const ScheduleManagement = () => {
 
   const handleSaveAvailability = async () => {
     try {
+      if (startTime >= endTime) {
+        toast.error('Крайният час трябва да е след началния час');
+        return;
+      }
+
       if (selectedAvailability) {
-        // Update existing availability
         await availabilityService.updateAvailability({
           ...selectedAvailability,
           dayOfWeek,
@@ -162,8 +157,8 @@ const ScheduleManagement = () => {
           endTime,
           isAvailable
         });
+        toast.success('Работното време е обновено успешно');
       } else {
-        // Create new availability
         await availabilityService.setDentistAvailability({
           dentistId,
           dayOfWeek,
@@ -171,12 +166,14 @@ const ScheduleManagement = () => {
           endTime,
           isAvailable
         });
+        toast.success('Работното време е добавено успешно');
       }
       
       setIsAvailabilityDialogOpen(false);
       refetchAvailabilities();
     } catch (error) {
       console.error("Error saving availability:", error);
+      toast.error('Възникна грешка при записване на работното време');
     }
   };
 
@@ -199,7 +196,6 @@ const ScheduleManagement = () => {
     setIsBookingDialogOpen(true);
   };
 
-  // Render functions
   return (
     <div className="space-y-6">
       <Card>
@@ -331,7 +327,6 @@ const ScheduleManagement = () => {
         </CardContent>
       </Card>
       
-      {/* Dialog for adding/editing availability */}
       <Dialog open={isAvailabilityDialogOpen} onOpenChange={setIsAvailabilityDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -379,45 +374,12 @@ const ScheduleManagement = () => {
             
             <div className="space-y-2">
               <Label>Часови диапазон</Label>
-              <div className="flex items-center space-x-2">
-                <div className="w-1/2">
-                  <Label htmlFor="startTime" className="sr-only">Начален час</Label>
-                  <Select value={startTime} onValueChange={setStartTime}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Начален час" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Array.from({ length: 24 }, (_, i) => ({
-                        value: `${String(i).padStart(2, '0')}:00`,
-                        label: `${String(i).padStart(2, '0')}:00`
-                      })).map((time) => (
-                        <SelectItem key={time.value} value={time.value}>
-                          {time.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>до</div>
-                <div className="w-1/2">
-                  <Label htmlFor="endTime" className="sr-only">Краен час</Label>
-                  <Select value={endTime} onValueChange={setEndTime}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Краен час" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Array.from({ length: 24 }, (_, i) => ({
-                        value: `${String(i).padStart(2, '0')}:00`,
-                        label: `${String(i).padStart(2, '0')}:00`
-                      })).map((time) => (
-                        <SelectItem key={time.value} value={time.value}>
-                          {time.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
+              <TimeRange 
+                startTime={startTime}
+                endTime={endTime}
+                onStartTimeChange={setStartTime}
+                onEndTimeChange={setEndTime}
+              />
             </div>
             
             <div className="flex items-center space-x-2">
@@ -437,7 +399,7 @@ const ScheduleManagement = () => {
                 onClick={handleDeleteAvailability}
               >
                 <Trash2 className="h-4 w-4 mr-1" />
-                Изтрий
+                ��зтрий
               </Button>
             )}
             <div className="flex space-x-2">
@@ -455,7 +417,6 @@ const ScheduleManagement = () => {
         </DialogContent>
       </Dialog>
       
-      {/* Dialog for booking an appointment */}
       <Dialog open={isBookingDialogOpen} onOpenChange={setIsBookingDialogOpen}>
         <DialogContent>
           <DialogHeader>

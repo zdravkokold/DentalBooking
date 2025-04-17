@@ -1,5 +1,4 @@
 
-import { supabase } from '@/integrations/supabase/client';
 import { Appointment, AppointmentHistory, Report, AppointmentStatus } from '@/data/models';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -8,69 +7,76 @@ export const appointmentService = {
   // Get all appointments
   getAllAppointments: async (): Promise<Appointment[]> => {
     try {
-      const { data, error } = await supabase
-        .from('appointments')
-        .select('*')
-        .order('date', { ascending: true });
-
-      if (error) {
-        toast.error('Грешка при зареждане на записванията: ' + error.message);
-        throw error;
-      }
-
-      if (!data) return [];
-
-      // Map the returned data to the Appointment interface
-      return data.map(appointment => ({
-        id: appointment.id,
-        patientId: appointment.patient_id,
-        dentistId: appointment.dentist_id,
-        serviceId: appointment.service_id,
-        date: appointment.date,
-        startTime: appointment.time,
-        endTime: calculateEndTime(appointment.time, 60), // Default to 60 min if we don't have service duration
-        status: appointment.status as AppointmentStatus,
-        notes: appointment.notes || '',
-        createdAt: appointment.created_at
-      }));
+      // Mock data for demo
+      const mockAppointments: Appointment[] = [
+        {
+          id: "1",
+          patientId: "p1",
+          dentistId: "d1",
+          serviceId: "s1",
+          date: "2025-04-20",
+          startTime: "10:00",
+          endTime: "11:00",
+          status: "scheduled",
+          notes: "First visit",
+          createdAt: "2025-04-15T10:30:00Z"
+        },
+        {
+          id: "2",
+          patientId: "p2",
+          dentistId: "d1",
+          serviceId: "s2",
+          date: "2025-04-21",
+          startTime: "14:00",
+          endTime: "15:00",
+          status: "scheduled",
+          notes: "Follow-up",
+          createdAt: "2025-04-15T11:15:00Z"
+        }
+      ];
+      
+      return mockAppointments;
     } catch (error) {
       console.error('Error fetching appointments:', error);
-      throw error;
+      return []; // Return empty array on error
     }
   },
 
   // Get appointments for a specific dentist
   getDentistAppointments: async (dentistId: string): Promise<Appointment[]> => {
     try {
-      const { data, error } = await supabase
-        .from('appointments')
-        .select('*')
-        .eq('dentist_id', dentistId)
-        .order('date', { ascending: true });
-
-      if (error) {
-        toast.error('Грешка при зареждане на записванията: ' + error.message);
-        throw error;
-      }
-
-      if (!data) return [];
-
-      // Map the returned data to the Appointment interface
-      return data.map(appointment => ({
-        id: appointment.id,
-        patientId: appointment.patient_id,
-        dentistId: appointment.dentist_id,
-        serviceId: appointment.service_id,
-        date: appointment.date,
-        startTime: appointment.time,
-        endTime: calculateEndTime(appointment.time, 60), // Default to 60 min
-        status: appointment.status as AppointmentStatus,
-        notes: appointment.notes || '',
-        createdAt: appointment.created_at
-      }));
+      // Mock data for demo
+      const mockAppointments: Appointment[] = [
+        {
+          id: "1",
+          patientId: "p1",
+          dentistId: dentistId,
+          serviceId: "s1",
+          date: "2025-04-20",
+          startTime: "10:00",
+          endTime: "11:00",
+          status: "scheduled",
+          notes: "First visit",
+          createdAt: "2025-04-15T10:30:00Z"
+        },
+        {
+          id: "2",
+          patientId: "p2",
+          dentistId: dentistId,
+          serviceId: "s2",
+          date: "2025-04-21",
+          startTime: "14:00",
+          endTime: "15:00",
+          status: "scheduled", 
+          notes: "Follow-up",
+          createdAt: "2025-04-15T11:15:00Z"
+        }
+      ];
+      
+      return mockAppointments;
     } catch (error) {
       console.error('Error fetching dentist appointments:', error);
-      throw error;
+      return []; // Return empty array on error
     }
   },
 
@@ -83,35 +89,7 @@ export const appointmentService = {
     endDate?: string;
   } | 'week' | 'month' | 'all'): Promise<AppointmentHistory[]> => {
     try {
-      // Handle period shortcuts
-      let actualFilters: {
-        patientId?: string;
-        dentistId?: string;
-        status?: string;
-        startDate?: string;
-        endDate?: string;
-      } = {};
-      
-      if (filters === 'week') {
-        const today = new Date();
-        const startOfWeek = new Date(today);
-        startOfWeek.setDate(today.getDate() - today.getDay());
-        actualFilters = {
-          startDate: format(startOfWeek, 'yyyy-MM-dd'),
-          endDate: format(today, 'yyyy-MM-dd')
-        };
-      } else if (filters === 'month') {
-        const today = new Date();
-        const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-        actualFilters = {
-          startDate: format(startOfMonth, 'yyyy-MM-dd'),
-          endDate: format(today, 'yyyy-MM-dd')
-        };
-      } else if (filters && filters !== 'all') {
-        actualFilters = filters;
-      }
-      
-      // For demo without actual database data
+      // For demo, return mock data
       const mockAppointmentHistories: AppointmentHistory[] = [
         {
           appointment: {
@@ -155,96 +133,7 @@ export const appointmentService = {
         }
       ];
       
-      // Return mock data for now as the database query isn't working
       return mockAppointmentHistories;
-      
-      /* Commented out the real implementation until database is ready
-      // Build query with filters
-      let query = supabase
-        .from('appointments')
-        .select(`
-          *,
-          profiles!appointments_patient_id_fkey(*),
-          dentists!appointments_dentist_id_fkey(*),
-          services!appointments_service_id_fkey(*)
-        `)
-        .order('date', { ascending: false });
-
-      // Apply filters
-      if (actualFilters) {
-        if (actualFilters.patientId) {
-          query = query.eq('patient_id', actualFilters.patientId);
-        }
-        if (actualFilters.dentistId) {
-          query = query.eq('dentist_id', actualFilters.dentistId);
-        }
-        if (actualFilters.status) {
-          query = query.eq('status', actualFilters.status);
-        }
-        if (actualFilters.startDate) {
-          query = query.gte('date', actualFilters.startDate);
-        }
-        if (actualFilters.endDate) {
-          query = query.lte('date', actualFilters.endDate);
-        }
-      }
-
-      const { data, error } = await query;
-
-      if (error) {
-        toast.error('Грешка при зареждане на историята: ' + error.message);
-        throw error;
-      }
-
-      // Handle the case where data might be empty
-      if (!data || data.length === 0) {
-        return [];
-      }
-
-      // Map the returned data to the AppointmentHistory interface
-      return data.map(item => {
-        return {
-          appointment: {
-            id: item.id,
-            patientId: item.patient_id,
-            dentistId: item.dentist_id,
-            serviceId: item.service_id,
-            date: item.date,
-            startTime: item.time,
-            endTime: calculateEndTime(item.time, item.services?.duration || 60),
-            status: item.status as AppointmentStatus,
-            notes: item.notes || '',
-            createdAt: item.created_at
-          },
-          patient: {
-            id: item.profiles.id,
-            name: `${item.profiles.first_name || ''} ${item.profiles.last_name || ''}`.trim(),
-            email: item.profiles.email || '',
-            phone: item.profiles.phone || '',
-            healthStatus: item.profiles.health_status || '',
-          },
-          dentist: {
-            id: item.dentists.id,
-            name: "Dr. " + item.dentists.name || '',
-            specialization: item.dentists.specialization || '',
-            imageUrl: "/placeholder.svg",
-            bio: item.dentists.bio || '',
-            rating: 4.5, // Default rating
-            yearsOfExperience: item.dentists.years_of_experience || 0,
-            education: "Medical University",
-            languages: ["Bulgarian", "English"]
-          },
-          service: {
-            id: item.services.id,
-            name: item.services.name || '',
-            description: item.services.description || '',
-            price: item.services.price || 0,
-            duration: item.services.duration || 0,
-            imageUrl: "/placeholder.svg"
-          }
-        };
-      });
-      */
     } catch (error) {
       console.error('Error fetching appointment history:', error);
       return []; // Return empty array on error
@@ -263,42 +152,6 @@ export const appointmentService = {
         cancelledAppointments: 5,
         patientCount: 25
       };
-      
-      /* Commented out the real implementation until database is ready
-      const { data: appointments, error } = await supabase
-        .from('appointments')
-        .select('*')
-        .gte('date', startDate)
-        .lte('date', endDate);
-
-      if (error) {
-        toast.error('Грешка при генериране на справка: ' + error.message);
-        throw error;
-      }
-
-      if (!appointments) {
-        return {
-          startDate,
-          endDate,
-          totalAppointments: 0,
-          completedAppointments: 0,
-          cancelledAppointments: 0,
-          patientCount: 0
-        };
-      }
-
-      // Get unique patient count
-      const uniquePatients = new Set(appointments.map(a => a.patient_id)).size;
-
-      return {
-        startDate,
-        endDate,
-        totalAppointments: appointments.length,
-        completedAppointments: appointments.filter(a => a.status === 'completed').length,
-        cancelledAppointments: appointments.filter(a => a.status === 'cancelled').length,
-        patientCount: uniquePatients
-      };
-      */
     } catch (error) {
       console.error('Error generating report:', error);
       toast.error('Грешка при генериране на справка');
