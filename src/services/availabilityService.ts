@@ -8,7 +8,23 @@ export const availabilityService = {
   // Get availability for a dentist
   getDentistAvailability: async (dentistId: string): Promise<DentistAvailability[]> => {
     try {
-      // Mock data for demo
+      // Implement with actual Supabase query
+      // This would be a real implementation
+      const { data, error } = await supabase
+        .from('dentist_availabilities') // Make sure this table exists in your Supabase
+        .select('*')
+        .eq('dentist_id', dentistId);
+      
+      if (error) {
+        console.error('Error fetching dentist availability:', error);
+        throw error;
+      }
+      
+      if (data && data.length > 0) {
+        return data;
+      }
+      
+      // If no data found, return mock data for now
       const mockAvailability: DentistAvailability[] = [
         {
           id: "1",
@@ -39,6 +55,7 @@ export const availabilityService = {
       return mockAvailability;
     } catch (error) {
       console.error('Error fetching dentist availability:', error);
+      toast.error('Грешка при зареждане на наличността на зъболекаря');
       return []; // Return empty array on error
     }
   },
@@ -46,10 +63,20 @@ export const availabilityService = {
   // Set availability for a dentist
   setDentistAvailability: async (availability: Omit<DentistAvailability, 'id'>): Promise<string> => {
     try {
-      // Mock success for demo
-      const newId = Math.random().toString(36).substring(2, 15);
+      const { data, error } = await supabase
+        .from('dentist_availabilities')
+        .insert(availability)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error setting dentist availability:', error);
+        toast.error('Грешка при задаване на наличност');
+        throw error;
+      }
+
       toast.success('Наличността е зададена успешно');
-      return newId;
+      return data.id;
     } catch (error) {
       console.error('Error setting dentist availability:', error);
       toast.error('Грешка при задаване на наличност');
@@ -60,9 +87,23 @@ export const availabilityService = {
   // Update availability
   updateAvailability: async (availability: DentistAvailability): Promise<void> => {
     try {
-      // Mock success for demo
+      const { error } = await supabase
+        .from('dentist_availabilities')
+        .update({
+          day_of_week: availability.dayOfWeek,
+          start_time: availability.startTime,
+          end_time: availability.endTime,
+          is_available: availability.isAvailable
+        })
+        .eq('id', availability.id);
+
+      if (error) {
+        console.error('Error updating availability:', error);
+        toast.error('Грешка при обновяване на наличност');
+        throw error;
+      }
+
       toast.success('Наличността е обновена успешно');
-      return;
     } catch (error) {
       console.error('Error updating availability:', error);
       toast.error('Грешка при обновяване на наличност');
@@ -73,9 +114,18 @@ export const availabilityService = {
   // Delete availability
   deleteAvailability: async (id: string): Promise<void> => {
     try {
-      // Mock success for demo
+      const { error } = await supabase
+        .from('dentist_availabilities')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        console.error('Error deleting availability:', error);
+        toast.error('Грешка при изтриване на наличност');
+        throw error;
+      }
+
       toast.success('Наличността е изтрита успешно');
-      return;
     } catch (error) {
       console.error('Error deleting availability:', error);
       toast.error('Грешка при изтриване на наличност');

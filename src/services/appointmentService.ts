@@ -1,5 +1,6 @@
 
-import { Appointment, AppointmentHistory, Report, AppointmentStatus } from '@/data/models';
+import { supabase } from '@/integrations/supabase/client';
+import { Appointment, AppointmentHistory, Report } from '@/data/models';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 
@@ -7,37 +8,19 @@ export const appointmentService = {
   // Get all appointments
   getAllAppointments: async (): Promise<Appointment[]> => {
     try {
-      // Mock data for demo
-      const mockAppointments: Appointment[] = [
-        {
-          id: "1",
-          patientId: "p1",
-          dentistId: "d1",
-          serviceId: "s1",
-          date: "2025-04-20",
-          startTime: "10:00",
-          endTime: "11:00",
-          status: "scheduled",
-          notes: "First visit",
-          createdAt: "2025-04-15T10:30:00Z"
-        },
-        {
-          id: "2",
-          patientId: "p2",
-          dentistId: "d1",
-          serviceId: "s2",
-          date: "2025-04-21",
-          startTime: "14:00",
-          endTime: "15:00",
-          status: "scheduled",
-          notes: "Follow-up",
-          createdAt: "2025-04-15T11:15:00Z"
-        }
-      ];
+      const { data, error } = await supabase
+        .from('appointments')
+        .select('*');
       
-      return mockAppointments;
+      if (error) {
+        console.error('Error fetching appointments:', error);
+        throw error;
+      }
+      
+      return data || [];
     } catch (error) {
       console.error('Error fetching appointments:', error);
+      toast.error('Грешка при зареждане на часовете');
       return []; // Return empty array on error
     }
   },
@@ -45,38 +28,74 @@ export const appointmentService = {
   // Get appointments for a specific dentist
   getDentistAppointments: async (dentistId: string): Promise<Appointment[]> => {
     try {
-      // Mock data for demo
-      const mockAppointments: Appointment[] = [
-        {
-          id: "1",
-          patientId: "p1",
-          dentistId: dentistId,
-          serviceId: "s1",
-          date: "2025-04-20",
-          startTime: "10:00",
-          endTime: "11:00",
-          status: "scheduled",
-          notes: "First visit",
-          createdAt: "2025-04-15T10:30:00Z"
-        },
-        {
-          id: "2",
-          patientId: "p2",
-          dentistId: dentistId,
-          serviceId: "s2",
-          date: "2025-04-21",
-          startTime: "14:00",
-          endTime: "15:00",
-          status: "scheduled", 
-          notes: "Follow-up",
-          createdAt: "2025-04-15T11:15:00Z"
-        }
-      ];
+      const { data, error } = await supabase
+        .from('appointments')
+        .select('*')
+        .eq('dentist_id', dentistId);
       
-      return mockAppointments;
+      if (error) {
+        console.error('Error fetching dentist appointments:', error);
+        throw error;
+      }
+      
+      console.log('Fetched dentist appointments:', data);
+      return data || [];
     } catch (error) {
       console.error('Error fetching dentist appointments:', error);
+      toast.error('Грешка при зареждане на часовете на зъболекаря');
       return []; // Return empty array on error
+    }
+  },
+
+  // Create a new appointment
+  createAppointment: async (appointmentData: Omit<Appointment, 'id' | 'createdAt'>): Promise<string> => {
+    try {
+      // Format date in the expected format for Supabase
+      const formattedData = {
+        ...appointmentData,
+        created_at: new Date().toISOString()
+      };
+
+      const { data, error } = await supabase
+        .from('appointments')
+        .insert(formattedData)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error creating appointment:', error);
+        toast.error('Грешка при запазване на час');
+        throw error;
+      }
+
+      toast.success('Часът е запазен успешно');
+      return data.id;
+    } catch (error) {
+      console.error('Error creating appointment:', error);
+      toast.error('Грешка при запазване на час');
+      throw error;
+    }
+  },
+
+  // Update appointment status
+  updateAppointmentStatus: async (id: string, status: string): Promise<void> => {
+    try {
+      const { error } = await supabase
+        .from('appointments')
+        .update({ status })
+        .eq('id', id);
+
+      if (error) {
+        console.error('Error updating appointment status:', error);
+        toast.error('Грешка при обновяване на статуса на часа');
+        throw error;
+      }
+
+      toast.success('Статусът на часа е обновен успешно');
+    } catch (error) {
+      console.error('Error updating appointment status:', error);
+      toast.error('Грешка при обновяване на статуса на часа');
+      throw error;
     }
   },
 
@@ -89,7 +108,11 @@ export const appointmentService = {
     endDate?: string;
   } | 'week' | 'month' | 'all'): Promise<AppointmentHistory[]> => {
     try {
-      // For demo, return mock data
+      // This would ideally use a view or a join in the database
+      // For now, we'll simulate with a mock implementation
+      // In a real implementation, you'd use supabase.from(...).select(...) with proper joins
+      
+      // Mock data for demo
       const mockAppointmentHistories: AppointmentHistory[] = [
         {
           appointment: {
@@ -114,9 +137,9 @@ export const appointmentService = {
           dentist: {
             id: "d1",
             name: "Dr. Petrov",
-            specialization: "Orthodontist",
+            specialization: "Зъболекар",
             imageUrl: "/placeholder.svg",
-            bio: "Experienced orthodontist",
+            bio: "Experienced зъболекар",
             rating: 4.8,
             yearsOfExperience: 15,
             education: "Medical University Sofia",
@@ -143,6 +166,7 @@ export const appointmentService = {
   // Generate report
   generateReport: async (startDate: string, endDate: string): Promise<Report> => {
     try {
+      // In a real implementation, you'd create a database query to aggregate this data
       // For demo, return mock report data
       return {
         startDate,
