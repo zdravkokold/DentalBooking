@@ -24,20 +24,16 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: false,
-      onSettled: (data, error) => {
-        if (error) {
-          console.error('Query error:', error);
-          toast.error('Възникна грешка при заявката');
-        }
+      onError: (error) => {
+        console.error('Query error:', error);
+        toast.error('Възникна грешка при заявката');
       }
     },
     mutations: {
       retry: false,
-      onSettled: (data, error) => {
-        if (error) {
-          console.error('Mutation error:', error);
-          toast.error('Възникна грешка при обработката на данните');
-        }
+      onError: (error) => {
+        console.error('Mutation error:', error);
+        toast.error('Възникна грешка при обработката на данните');
       }
     }
   }
@@ -53,7 +49,8 @@ const AppContent = () => {
     // Проверка за предстоящи часове
     const checkAppointments = async () => {
       try {
-        await checkUpcomingAppointments();
+        const mockAppointments = []; // Provide empty array as fallback
+        await checkUpcomingAppointments(mockAppointments);
       } catch (error) {
         console.error("Failed to check upcoming appointments:", error);
       }

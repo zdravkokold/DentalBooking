@@ -5,7 +5,7 @@ import { format, isToday, isTomorrow, addDays } from "date-fns";
 import { bg } from "date-fns/locale";
 
 // Function to check upcoming appointments and show notifications
-export const checkUpcomingAppointments = (appointments: Appointment[]) => {
+export const checkUpcomingAppointments = (appointments: Appointment[] = []) => {
   if (!appointments || appointments.length === 0) return;
   
   const now = new Date();
