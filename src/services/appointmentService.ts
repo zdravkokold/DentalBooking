@@ -4,6 +4,25 @@ import { Appointment, AppointmentHistory, Report } from '@/data/models';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 
+// Define the type of appointment status for type safety
+type AppointmentStatus = 'pending' | 'confirmed' | 'completed' | 'cancelled';
+
+// Helper function to map database fields to our model interface
+const mapAppointmentFromDB = (dbAppointment: any): Appointment => {
+  return {
+    id: dbAppointment.id,
+    patientId: dbAppointment.patient_id,
+    dentistId: dbAppointment.dentist_id,
+    serviceId: dbAppointment.service_id,
+    date: dbAppointment.date,
+    startTime: dbAppointment.time,
+    endTime: calculateEndTime(dbAppointment.time, 60), // Default to 60 min if no duration
+    status: dbAppointment.status || 'pending',
+    notes: dbAppointment.notes || '',
+    createdAt: dbAppointment.created_at
+  };
+};
+
 export const appointmentService = {
   // Get all appointments
   getAllAppointments: async (): Promise<Appointment[]> => {
@@ -17,7 +36,7 @@ export const appointmentService = {
         throw error;
       }
       
-      return data || [];
+      return data ? data.map(mapAppointmentFromDB) : [];
     } catch (error) {
       console.error('Error fetching appointments:', error);
       toast.error('Грешка при зареждане на часовете');
@@ -39,7 +58,7 @@ export const appointmentService = {
       }
       
       console.log('Fetched dentist appointments:', data);
-      return data || [];
+      return data ? data.map(mapAppointmentFromDB) : [];
     } catch (error) {
       console.error('Error fetching dentist appointments:', error);
       toast.error('Грешка при зареждане на часовете на зъболекаря');
@@ -50,9 +69,15 @@ export const appointmentService = {
   // Create a new appointment
   createAppointment: async (appointmentData: Omit<Appointment, 'id' | 'createdAt'>): Promise<string> => {
     try {
-      // Format date in the expected format for Supabase
+      // Format data to match the database schema
       const formattedData = {
-        ...appointmentData,
+        patient_id: appointmentData.patientId,
+        dentist_id: appointmentData.dentistId,
+        service_id: appointmentData.serviceId,
+        date: appointmentData.date,
+        time: appointmentData.startTime,
+        status: appointmentData.status,
+        notes: appointmentData.notes,
         created_at: new Date().toISOString()
       };
 

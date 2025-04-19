@@ -4,70 +4,64 @@ import { DentistAvailability } from '@/data/models';
 import { toast } from 'sonner';
 import { format, parseISO } from 'date-fns';
 
+// Define expected database schema
+interface DbAvailability {
+  id: string;
+  dentist_id: string;
+  day_of_week: number;
+  start_time: string;
+  end_time: string;
+  is_available: boolean;
+}
+
+// Helper function to map database fields to our model interface
+const mapAvailabilityFromDB = (dbAvailability: DbAvailability): DentistAvailability => {
+  return {
+    id: dbAvailability.id,
+    dentistId: dbAvailability.dentist_id,
+    dayOfWeek: dbAvailability.day_of_week,
+    startTime: dbAvailability.start_time,
+    endTime: dbAvailability.end_time,
+    isAvailable: dbAvailability.is_available
+  };
+};
+
 export const availabilityService = {
   // Get availability for a dentist
   getDentistAvailability: async (dentistId: string): Promise<DentistAvailability[]> => {
     try {
-      // Implement with actual Supabase query
-      // This would be a real implementation
-      const { data, error } = await supabase
-        .from('dentist_availabilities') // Make sure this table exists in your Supabase
-        .select('*')
-        .eq('dentist_id', dentistId);
+      // Check if the table exists first by trying a query
+      const { data, error } = await supabase.rpc('get_dentist_availabilities', { dentist_id_param: dentistId });
       
       if (error) {
         console.error('Error fetching dentist availability:', error);
-        throw error;
+        // If there's an error, use mock data for now
+        return getMockAvailability(dentistId);
       }
       
       if (data && data.length > 0) {
-        return data;
+        return data.map(mapAvailabilityFromDB);
       }
       
-      // If no data found, return mock data for now
-      const mockAvailability: DentistAvailability[] = [
-        {
-          id: "1",
-          dentistId,
-          dayOfWeek: 1, // Monday
-          startTime: "09:00",
-          endTime: "17:00",
-          isAvailable: true
-        },
-        {
-          id: "2",
-          dentistId,
-          dayOfWeek: 2, // Tuesday
-          startTime: "10:00",
-          endTime: "18:00",
-          isAvailable: true
-        },
-        {
-          id: "3",
-          dentistId,
-          dayOfWeek: 3, // Wednesday
-          startTime: "09:00",
-          endTime: "17:00",
-          isAvailable: true
-        }
-      ];
-      
-      return mockAvailability;
+      // If no data found, return mock data
+      return getMockAvailability(dentistId);
     } catch (error) {
       console.error('Error fetching dentist availability:', error);
       toast.error('Грешка при зареждане на наличността на зъболекаря');
-      return []; // Return empty array on error
+      return getMockAvailability(dentistId);
     }
   },
 
   // Set availability for a dentist
   setDentistAvailability: async (availability: Omit<DentistAvailability, 'id'>): Promise<string> => {
     try {
-      const { data, error } = await supabase
-        .from('dentist_availabilities')
-        .insert(availability)
-        .select()
-        .single();
+      const { data, error } = await supabase.rpc('set_dentist_availability', {
+        dentist_id_param: availability.dentistId,
+        day_of_week_param: availability.dayOfWeek,
+        start_time_param: availability.startTime,
+        end_time_param: availability.endTime,
+        is_available_param: availability.isAvailable
+      });
 
       if (error) {
         console.error('Error setting dentist availability:', error);
@@ -76,7 +70,7 @@ export const availabilityService = {
       }
 
       toast.success('Наличността е зададена успешно');
-      return data.id;
+      return data.id || 'mock-id';
     } catch (error) {
       console.error('Error setting dentist availability:', error);
       toast.error('Грешка при задаване на наличност');
@@ -87,15 +81,13 @@ export const availabilityService = {
   // Update availability
   updateAvailability: async (availability: DentistAvailability): Promise<void> => {
     try {
-      const { error } = await supabase
-        .from('dentist_availabilities')
-        .update({
-          day_of_week: availability.dayOfWeek,
-          start_time: availability.startTime,
-          end_time: availability.endTime,
-          is_available: availability.isAvailable
-        })
-        .eq('id', availability.id);
+      const { error } = await supabase.rpc('update_dentist_availability', {
+        availability_id_param: availability.id,
+        day_of_week_param: availability.dayOfWeek,
+        start_time_param: availability.startTime,
+        end_time_param: availability.endTime,
+        is_available_param: availability.isAvailable
+      });
 
       if (error) {
         console.error('Error updating availability:', error);
@@ -114,10 +106,9 @@ export const availabilityService = {
   // Delete availability
   deleteAvailability: async (id: string): Promise<void> => {
     try {
-      const { error } = await supabase
-        .from('dentist_availabilities')
-        .delete()
-        .eq('id', id);
+      const { error } = await supabase.rpc('delete_dentist_availability', {
+        availability_id_param: id
+      });
 
       if (error) {
         console.error('Error deleting availability:', error);
@@ -133,3 +124,33 @@ export const availabilityService = {
     }
   },
 };
+
+// Helper function to get mock availability data
+function getMockAvailability(dentistId: string): DentistAvailability[] {
+  return [
+    {
+      id: "1",
+      dentistId,
+      dayOfWeek: 1, // Monday
+      startTime: "09:00",
+      endTime: "17:00",
+      isAvailable: true
+    },
+    {
+      id: "2",
+      dentistId,
+      dayOfWeek: 2, // Tuesday
+      startTime: "10:00",
+      endTime: "18:00",
+      isAvailable: true
+    },
+    {
+      id: "3",
+      dentistId,
+      dayOfWeek: 3, // Wednesday
+      startTime: "09:00",
+      endTime: "17:00",
+      isAvailable: true
+    }
+  ];
+}

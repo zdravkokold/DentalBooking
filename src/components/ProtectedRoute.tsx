@@ -26,7 +26,7 @@ const ProtectedRoute = ({ children, allowedRoles = [] }: ProtectedRouteProps) =>
   }
 
   // Check if user has an allowed role
-  if (user && allowedRoles.includes(user.role)) {
+  if (user && user.role && allowedRoles.includes(user.role as 'admin' | 'dentist' | 'patient')) {
     return <>{children}</>;
   }
 
