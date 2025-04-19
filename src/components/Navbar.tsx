@@ -1,11 +1,12 @@
 
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Menu, X, Calendar, User, Bell, LayoutDashboard } from "lucide-react";
+import { Menu, X, Calendar, User, Bell, LayoutDashboard, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "sonner";
+import { useAuth } from "@/context/AuthContext";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,6 +20,7 @@ const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const isMobile = useIsMobile();
   const navigate = useNavigate();
+  const { user, logout, isAuthenticated } = useAuth();
   
   const toggleMenu = () => setIsOpen(!isOpen);
   
@@ -42,6 +44,13 @@ const Navbar = () => {
   // Handle login button click
   const handleLoginClick = () => {
     navigate("/login");
+  };
+  
+  // Handle logout button click
+  const handleLogoutClick = () => {
+    logout();
+    toast.success("Успешно излязохте от акаунта си");
+    navigate("/");
   };
   
   return (
@@ -108,9 +117,15 @@ const Navbar = () => {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            <Button className="bg-dental-teal hover:bg-opacity-90 text-white" onClick={handleLoginClick}>
-              <User className="h-5 w-5 mr-2" /> Вход
-            </Button>
+            {isAuthenticated ? (
+              <Button className="bg-dental-teal hover:bg-opacity-90 text-white" onClick={handleLogoutClick}>
+                <LogOut className="h-5 w-5 mr-2" /> Изход
+              </Button>
+            ) : (
+              <Button className="bg-dental-teal hover:bg-opacity-90 text-white" onClick={handleLoginClick}>
+                <User className="h-5 w-5 mr-2" /> Вход
+              </Button>
+            )}
           </div>
           <div className="flex items-center sm:hidden">
             <button
@@ -190,15 +205,27 @@ const Navbar = () => {
               }}>
                 <Calendar className="h-5 w-5 text-gray-600" />
               </Button>
-              <Button 
-                className="w-full bg-dental-teal hover:bg-opacity-90 text-white"
-                onClick={() => {
-                  handleLoginClick();
-                  setIsOpen(false);
-                }}
-              >
-                <User className="h-5 w-5 mr-2" /> Вход
-              </Button>
+              {isAuthenticated ? (
+                <Button 
+                  className="w-full bg-dental-teal hover:bg-opacity-90 text-white"
+                  onClick={() => {
+                    handleLogoutClick();
+                    setIsOpen(false);
+                  }}
+                >
+                  <LogOut className="h-5 w-5 mr-2" /> Изход
+                </Button>
+              ) : (
+                <Button 
+                  className="w-full bg-dental-teal hover:bg-opacity-90 text-white"
+                  onClick={() => {
+                    handleLoginClick();
+                    setIsOpen(false);
+                  }}
+                >
+                  <User className="h-5 w-5 mr-2" /> Вход
+                </Button>
+              )}
             </div>
           </div>
         </div>

@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -32,7 +32,7 @@ const Login = () => {
   const navigate = useNavigate();
   
   // Redirect if already logged in
-  React.useEffect(() => {
+  useEffect(() => {
     if (user) {
       switch (user.role) {
         case 'admin':
@@ -120,6 +120,7 @@ const Login = () => {
                     variant="link" 
                     className="p-0 h-auto text-sm text-dental-teal"
                     onClick={() => navigate('/register')}
+                    type="button"
                   >
                     Създаване на акаунт
                   </Button>

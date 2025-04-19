@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
@@ -21,7 +20,6 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from "@/components/ui/badge";
 import { toast } from 'sonner';
 import ServiceCard from '@/components/ServiceCard';
@@ -78,10 +76,6 @@ const PatientDashboard = () => {
       <div className="bg-dental-teal py-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center">
-            <Avatar className="h-16 w-16 mr-4 border-2 border-white">
-              <AvatarImage src="https://images.unsplash.com/photo-1580489944761-15a19d654956?w=400&auto=format&fit=crop&q=60&ixlib=rb-4.0.3" alt="Мария Георгиева" />
-              <AvatarFallback>МГ</AvatarFallback>
-            </Avatar>
             <div>
               <h1 className="text-3xl font-bold text-white">Здравейте, {user?.name || 'Мария'}!</h1>
               <p className="text-dental-mint">{today}</p>
