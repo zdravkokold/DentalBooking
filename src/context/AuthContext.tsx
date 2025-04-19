@@ -28,6 +28,8 @@ export interface RegisterData {
   email: string;
   password: string;
   role: UserRole;
+  phone?: string;
+  birthDate?: string;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -132,7 +134,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           data: {
             first_name: userData.name.split(' ')[0] || '',
             last_name: userData.name.split(' ').slice(1).join(' ') || '',
-            role: userData.role
+            role: userData.role,
+            phone: userData.phone,
+            birthDate: userData.birthDate
           }
         }
       });
