@@ -1,309 +1,73 @@
-
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import {
-  ChartPie,
-  Users,
-  CalendarDays,
-  Stethoscope,
-  AlertTriangle,
-  TrendingUp,
-  User,
-  Settings,
-  FileText,
-  MessageSquare,
-  PlusCircle,
-  CalendarCheck
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { toast } from 'sonner';
-import UserManagement from '@/components/admin/UserManagement';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { User, Users, Calendar } from 'lucide-react';
+import { Link } from 'react-router-dom';
+
+interface DashboardCardProps {
+  title: string;
+  children: React.ReactNode;
+  icon: React.ReactNode;
+  href: string;
+}
+
+const DashboardCard = ({ title, children, icon, href }: DashboardCardProps) => (
+  <Link to={href}>
+    <Card className="h-full transition-all hover:shadow-lg hover:border-dental-teal">
+      <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+        <CardTitle className="text-xl font-bold">{title}</CardTitle>
+        <div className="w-10 h-10 bg-dental-teal rounded-full flex items-center justify-center text-white">
+          {icon}
+        </div>
+      </CardHeader>
+      <CardContent>
+        <p className="text-gray-600">{children}</p>
+      </CardContent>
+    </Card>
+  </Link>
+);
 
 const AdminDashboard = () => {
-  const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('overview');
-
-  // Функции за обработка на бутоните
-  const handleAddPatient = () => {
-    toast.info('Добавяне на нов пациент', {
-      description: 'Функционалността за добавяне на нов пациент е в процес на разработка.'
-    });
-    // Тук бихме пренасочили към формата за добавяне на нов пациент или отворили модален прозорец
-  };
-
-  const handleBookAppointment = () => {
-    navigate('/appointments');
-    toast.info('Пренасочване към запазване на час');
-  };
-
-  const handleCreateInvoice = () => {
-    toast.info('Създаване на нова фактура', {
-      description: 'Функционалността за създаване на нова фактура е в процес на разработка.'
-    });
-    // Тук бихме пренасочили към формата за създаване на нова фактура или отворили модален прозорец
-  };
-
-  const handleSendMessage = () => {
-    toast.info('Изпращане на съобщение', {
-      description: 'Функционалността за изпращане на съобщение е в процес на разработка.'
-    });
-    // Тук бихме пренасочили към формата за изпращане на съобщение или отворили модален прозорец
-  };
-
-  const handleTabChange = (value) => {
-    setActiveTab(value);
-  };
-
   return (
     <div className="flex flex-col min-h-screen">
       <Navbar />
-      
-      <div className="bg-dental-teal py-6">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h1 className="text-3xl font-bold text-white">Административен Панел</h1>
-          <p className="text-dental-mint">Управление на дентална клиника</p>
-        </div>
-      </div>
-
-      <main className="flex-grow bg-dental-lightGray">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <Tabs value={activeTab} onValueChange={handleTabChange} className="mb-6">
-            <TabsList className="bg-white">
-              <TabsTrigger value="overview">Обща информация</TabsTrigger>
-              <TabsTrigger value="patients">Пациенти</TabsTrigger>
-              <TabsTrigger value="dentists">Зъболекари</TabsTrigger>
-              <TabsTrigger value="appointments">Часове</TabsTrigger>
-              <TabsTrigger value="services">Услуги</TabsTrigger>
-              <TabsTrigger value="users">Потребители</TabsTrigger>
-              <TabsTrigger value="settings">Настройки</TabsTrigger>
-            </TabsList>
+      <main className="flex-grow bg-dental-lightGray p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Dashboard Cards */}
+            <DashboardCard 
+              title="Управление на зъболекари" 
+              icon={<User className="h-6 w-6" />}
+              href="/admin/dentists"
+            >
+              Преглед и управление на всички зъболекари в системата.
+            </DashboardCard>
             
-            <TabsContent value="overview" className="mt-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <Card>
-                  <CardContent className="flex items-center p-6">
-                    <div className="bg-dental-teal/10 p-3 rounded-full mr-4">
-                      <Users className="h-8 w-8 text-dental-teal" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-500">Общо пациенти</p>
-                      <h3 className="text-2xl font-bold">1,248</h3>
-                      <p className="text-xs text-green-500">+12% този месец</p>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardContent className="flex items-center p-6">
-                    <div className="bg-dental-teal/10 p-3 rounded-full mr-4">
-                      <CalendarDays className="h-8 w-8 text-dental-teal" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-500">Часове днес</p>
-                      <h3 className="text-2xl font-bold">24</h3>
-                      <p className="text-xs text-amber-500">-3% спрямо вчера</p>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardContent className="flex items-center p-6">
-                    <div className="bg-dental-teal/10 p-3 rounded-full mr-4">
-                      <Stethoscope className="h-8 w-8 text-dental-teal" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-500">Общо услуги</p>
-                      <h3 className="text-2xl font-bold">14</h3>
-                      <p className="text-xs text-green-500">+2 нови услуги</p>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardContent className="flex items-center p-6">
-                    <div className="bg-dental-teal/10 p-3 rounded-full mr-4">
-                      <AlertTriangle className="h-8 w-8 text-dental-teal" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-500">Спешни случаи</p>
-                      <h3 className="text-2xl font-bold">3</h3>
-                      <p className="text-xs text-red-500">Изисква внимание</p>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-                <Card className="lg:col-span-2">
-                  <CardHeader>
-                    <CardTitle className="flex items-center justify-between">
-                      <div>Месечна натовареност</div>
-                      <TrendingUp className="h-4 w-4 text-green-500" />
-                    </CardTitle>
-                    <CardDescription>Брой пациенти и процедури по месеци</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="h-80 flex items-center justify-center bg-gray-50 rounded">
-                      <ChartPie className="h-16 w-16 text-gray-300" />
-                      <span className="ml-2 text-gray-400">Тук ще бъде графиката</span>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Последна активност</CardTitle>
-                    <CardDescription>Последни действия в системата</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div className="flex items-start">
-                        <div className="bg-blue-100 p-2 rounded-full mr-3">
-                          <User className="h-4 w-4 text-blue-600" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium">Нов пациент регистриран</p>
-                          <p className="text-xs text-gray-500">Преди 14 минути</p>
-                        </div>
-                      </div>
-                      <div className="flex items-start">
-                        <div className="bg-green-100 p-2 rounded-full mr-3">
-                          <CalendarCheck className="h-4 w-4 text-green-600" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium">Потвърден час за д-р Иванов</p>
-                          <p className="text-xs text-gray-500">Преди 32 минути</p>
-                        </div>
-                      </div>
-                      <div className="flex items-start">
-                        <div className="bg-red-100 p-2 rounded-full mr-3">
-                          <AlertTriangle className="h-4 w-4 text-red-600" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium">Отменен час за днес</p>
-                          <p className="text-xs text-gray-500">Преди 1 час</p>
-                        </div>
-                      </div>
-                      <div className="flex items-start">
-                        <div className="bg-purple-100 p-2 rounded-full mr-3">
-                          <Settings className="h-4 w-4 text-purple-600" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium">Обновени настройки за система</p>
-                          <p className="text-xs text-gray-500">Преди 3 часа</p>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <Button className="flex items-center justify-center gap-2 h-auto py-3" onClick={handleAddPatient}>
-                  <PlusCircle className="h-4 w-4" />
-                  <span>Нов пациент</span>
-                </Button>
-                <Button className="flex items-center justify-center gap-2 h-auto py-3" onClick={handleBookAppointment}>
-                  <CalendarDays className="h-4 w-4" />
-                  <span>Запази час</span>
-                </Button>
-                <Button className="flex items-center justify-center gap-2 h-auto py-3" onClick={handleCreateInvoice}>
-                  <FileText className="h-4 w-4" />
-                  <span>Нова фактура</span>
-                </Button>
-                <Button className="flex items-center justify-center gap-2 h-auto py-3" onClick={handleSendMessage}>
-                  <MessageSquare className="h-4 w-4" />
-                  <span>Изпрати съобщение</span>
-                </Button>
-              </div>
-            </TabsContent>
+            <DashboardCard 
+              title="Управление на пациенти" 
+              icon={<Users className="h-6 w-6" />}
+              href="/admin/patients"
+            >
+              Преглед и управление на всички пациенти в системата.
+            </DashboardCard>
             
-            <TabsContent value="patients" className="mt-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Управление на пациенти</CardTitle>
-                  <CardDescription>Списък с всички регистрирани пациенти</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-80 flex items-center justify-center bg-gray-50 rounded">
-                    <Users className="h-16 w-16 text-gray-300" />
-                    <span className="ml-2 text-gray-400">Тук ще бъде таблицата с пациенти</span>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
+            <DashboardCard 
+              title="Управление на часове" 
+              icon={<Calendar className="h-6 w-6" />}
+              href="/admin/appointments"
+            >
+              Преглед и управление на всички часове в системата.
+            </DashboardCard>
+          </div>
 
-            <TabsContent value="dentists" className="mt-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Управление на зъболекари</CardTitle>
-                  <CardDescription>Списък с всички зъболекари в клиниката</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-80 flex items-center justify-center bg-gray-50 rounded">
-                    <Users className="h-16 w-16 text-gray-300" />
-                    <span className="ml-2 text-gray-400">Тук ще бъде таблицата със зъболекари</span>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="appointments" className="mt-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Управление на часове</CardTitle>
-                  <CardDescription>Всички запазени часове</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-80 flex items-center justify-center bg-gray-50 rounded">
-                    <CalendarDays className="h-16 w-16 text-gray-300" />
-                    <span className="ml-2 text-gray-400">Тук ще бъде календарът с часове</span>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="services" className="mt-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Управление на услуги</CardTitle>
-                  <CardDescription>Списък с всички предлагани услуги</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-80 flex items-center justify-center bg-gray-50 rounded">
-                    <Stethoscope className="h-16 w-16 text-gray-300" />
-                    <span className="ml-2 text-gray-400">Тук ще бъде таблицата с услуги</span>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-            
-            <TabsContent value="users" className="mt-6">
-              <UserManagement />
-            </TabsContent>
-
-            <TabsContent value="settings" className="mt-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Настройки на системата</CardTitle>
-                  <CardDescription>Общи настройки на приложението</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-80 flex items-center justify-center bg-gray-50 rounded">
-                    <Settings className="h-16 w-16 text-gray-300" />
-                    <span className="ml-2 text-gray-400">Тук ще бъдат настройките</span>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
+          {/* Recent Activity */}
+          <div className="mt-8">
+            <h2 className="text-2xl font-semibold mb-4">Последна активност</h2>
+            {/* Activity list or table here */}
+          </div>
         </div>
       </main>
-      
       <Footer />
     </div>
   );

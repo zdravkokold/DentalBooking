@@ -1,4 +1,3 @@
-
 import { Dentist, Service, AppointmentSlot } from './models';
 
 export const dentists: Dentist[] = [
@@ -38,8 +37,8 @@ export const dentists: Dentist[] = [
   {
     id: '4',
     name: 'Д-р Елена Тодорова',
-    specialization: 'Детски дентист',
-    imageUrl: 'https://images.unsplash.com/photo-1582750433449-648ed127bb54?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3',
+    specialization: 'Детски зъболекар',
+    imageUrl: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3',
     bio: 'Д-р Елена Тодорова е специалист в детската дентална медицина с над 6 години опит. Тя е известна със своя топъл и приятелски подход към малките пациенти, създавайки позитивни спомени от посещенията при зъболекар.',
     rating: 4.9,
     yearsOfExperience: 6,
@@ -55,12 +54,12 @@ export const services: Service[] = [
     description: 'Цялостен преглед на устната кухина, включващ оценка на състоянието на зъбите и венците, ранно откриване на кариеси и консултация за поддържане на добра дентална хигиена.',
     price: 60,
     duration: 30,
-    imageUrl: 'https://images.unsplash.com/photo-1606811971618-4486d14f3f99?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3'
+    imageUrl: 'https://plus.unsplash.com/premium_photo-1661766704348-30c572664c58?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3'
   },
   {
     id: '2',
     name: 'Лечение на кариес',
-    description: 'Премахване на кариозната тъкан и възстановяване на зъба с висококачествени фотополимерни материали, възстановяващи нормалната функция и естетика.',
+    description: 'Премахване на кариозната тъкан и възстановяване на зъба с висококачествени фотополимерни материали, възстановяваща нормалната функция и естетика.',
     price: 120,
     duration: 45,
     imageUrl: 'https://images.unsplash.com/photo-1609840113961-a9fe3b133378?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3'
@@ -68,10 +67,10 @@ export const services: Service[] = [
   {
     id: '3',
     name: 'Професионално избелване',
-    description: 'Безопасна процедура за изсветляване на зъбите с няколко нюанса, използвайки специални избелващи системи под професионален контрол.',
+    description: 'Безопасна процедура за изсветляване на зъбите с няколько нюанса, използвайки специални избелващи системи под професионален контрол.',
     price: 300,
     duration: 60,
-    imageUrl: 'https://images.unsplash.com/photo-1581585375770-3e606280f601?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3'
+    imageUrl: 'https://images.unsplash.com/photo-1581585391434-5716c0ecd2c0?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3'
   },
   {
     id: '4',
@@ -79,7 +78,7 @@ export const services: Service[] = [
     description: 'Хирургично поставяне на зъбен имплант, заместващ липсващ зъб, осигурявайки здрава основа за бъдеща коронка.',
     price: 1500,
     duration: 90,
-    imageUrl: 'https://images.unsplash.com/photo-1579683563554-ca2d88278b8a?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3'
+    imageUrl: 'https://images.unsplash.com/photo-1609840114035-3c981b782dfe?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3'
   },
   {
     id: '5',
@@ -99,22 +98,17 @@ export const services: Service[] = [
   }
 ];
 
-// Generate available appointment slots for the next 14 days
 export const generateAppointmentSlots = (): AppointmentSlot[] => {
   const slots: AppointmentSlot[] = [];
   const today = new Date();
   
-  // For each dentist
   dentists.forEach(dentist => {
-    // For the next 14 days
     for (let dayOffset = 1; dayOffset <= 14; dayOffset++) {
       const date = new Date(today);
       date.setDate(today.getDate() + dayOffset);
       
-      // Skip weekends
       if (date.getDay() === 0 || date.getDay() === 6) continue;
       
-      // Create slots from 9:00 to 17:00 with 30-minute intervals
       for (let hour = 9; hour < 17; hour++) {
         for (let minute of [0, 30]) {
           const startTime = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
@@ -122,7 +116,6 @@ export const generateAppointmentSlots = (): AppointmentSlot[] => {
           const endMinute = minute === 30 ? 0 : 30;
           const endTime = `${endHour.toString().padStart(2, '0')}:${endMinute.toString().padStart(2, '0')}`;
           
-          // Randomize availability, with most slots being available
           const isAvailable = Math.random() > 0.2;
           
           slots.push({
@@ -141,5 +134,4 @@ export const generateAppointmentSlots = (): AppointmentSlot[] => {
   return slots;
 };
 
-// Init appointment slots
 export const appointmentSlots = generateAppointmentSlots();

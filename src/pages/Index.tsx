@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -39,8 +38,7 @@ const Index = () => {
                   Запази час сега
                 </Button>
                 <Button 
-                  variant="outline" 
-                  className="text-white border-white hover:bg-white/10"
+                  className="bg-white text-dental-teal hover:bg-dental-mint hover:text-dental-teal"
                   size="lg"
                   onClick={() => navigate('/dentists')}
                 >

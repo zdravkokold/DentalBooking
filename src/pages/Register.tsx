@@ -24,13 +24,24 @@ import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import { User, Mail, Lock } from 'lucide-react';
+import { User, Mail, Lock, Phone, CalendarDays } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
 const registerSchema = z.object({
   name: z.string().min(2, 'Името трябва да бъде поне 2 символа'),
   email: z.string().email('Невалиден имейл адрес'),
   password: z.string().min(6, 'Паролата трябва да бъде поне 6 символа'),
+  confirmPassword: z.string(),
+  phone: z.string().regex(/^(\+359|0)[0-9]{9}$/, 'Невалиден телефонен номер'),
+  birthDate: z.string().refine((date) => {
+    const birthDate = new Date(date);
+    const today = new Date();
+    const age = today.getFullYear() - birthDate.getFullYear();
+    return age >= 18 && age <= 100;
+  }, 'Трябва да сте навършили 18 години')
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Паролите не съвпадат",
+  path: ["confirmPassword"],
 });
 
 type RegisterFormValues = z.infer<typeof registerSchema>;
@@ -45,6 +56,9 @@ const Register = () => {
       name: '',
       email: '',
       password: '',
+      confirmPassword: '',
+      phone: '',
+      birthDate: '',
     },
   });
 
@@ -55,13 +69,14 @@ const Register = () => {
         name: data.name,
         email: data.email,
         password: data.password,
+        phone: data.phone,
+        birthDate: data.birthDate,
         role: 'patient'
       });
       
       navigate('/login');
     } catch (error) {
       console.error('Registration error:', error);
-      // The error message is already displayed by the AuthProvider
     }
   };
 
@@ -111,6 +126,40 @@ const Register = () => {
                     </FormItem>
                   )}
                 />
+
+                <FormField
+                  control={form.control}
+                  name="phone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Телефон</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                          <Input placeholder="+359888123456" className="pl-10" {...field} />
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="birthDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Дата на раждане</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <CalendarDays className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                          <Input type="date" className="pl-10" {...field} />
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 
                 <FormField
                   control={form.control}
@@ -118,6 +167,23 @@ const Register = () => {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Парола</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                          <Input type="password" placeholder="••••••••" className="pl-10" {...field} />
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="confirmPassword"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Потвърди парола</FormLabel>
                       <FormControl>
                         <div className="relative">
                           <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />

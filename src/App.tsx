@@ -1,8 +1,7 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useEffect } from "react";
 import Index from "./pages/Index";
 import Appointments from "./pages/Appointments";
@@ -19,21 +18,24 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import { checkUpcomingAppointments } from "./services/notificationService";
 import { toast } from "sonner";
 
-// Конфигурация на QueryClient с правилна обработка на грешки
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: false,
-      onError: (error) => {
-        console.error('Query error:', error);
-        toast.error('Възникна грешка при заявката');
+      meta: {
+        onError: (error: Error) => {
+          console.error('Query error:', error);
+          toast.error('Възникна грешка при заявката');
+        }
       }
     },
     mutations: {
       retry: false,
-      onError: (error) => {
-        console.error('Mutation error:', error);
-        toast.error('Възникна грешка при обработката на данните');
+      meta: {
+        onError: (error: Error) => {
+          console.error('Mutation error:', error);
+          toast.error('Възникна грешка при обработката на данните');
+        }
       }
     }
   }
