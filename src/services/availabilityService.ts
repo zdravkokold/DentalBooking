@@ -2,51 +2,40 @@
 import { supabase } from '@/integrations/supabase/client';
 import { DentistAvailability } from '@/data/models';
 import { toast } from 'sonner';
-import { format, parseISO } from 'date-fns';
 
-// Define expected database schema
-interface DbAvailability {
-  id: string;
-  dentist_id: string;
-  day_of_week: number;
-  start_time: string;
-  end_time: string;
-  is_available: boolean;
-}
+// Use database-generated types from Supabase
+import type { Database } from '@/integrations/supabase/types';
 
-// Helper function to map database fields to our model interface
-const mapAvailabilityFromDB = (dbAvailability: DbAvailability): DentistAvailability => {
-  return {
-    id: dbAvailability.id,
-    dentistId: dbAvailability.dentist_id,
-    dayOfWeek: dbAvailability.day_of_week,
-    startTime: dbAvailability.start_time,
-    endTime: dbAvailability.end_time,
-    isAvailable: dbAvailability.is_available
-  };
-};
+type DentistAvailabilitiesRow = Database['public']['Tables']['dentist_availabilities']['Row'];
+type DentistAvailabilitiesInsert = Database['public']['Tables']['dentist_availabilities']['Insert'];
+type DentistAvailabilitiesUpdate = Database['public']['Tables']['dentist_availabilities']['Update'];
+
+const mapAvailabilityFromDB = (dbAvailability: DentistAvailabilitiesRow): DentistAvailability => ({
+  id: dbAvailability.id,
+  dentistId: dbAvailability.dentist_id,
+  dayOfWeek: dbAvailability.day_of_week,
+  startTime: dbAvailability.start_time,
+  endTime: dbAvailability.end_time,
+  isAvailable: dbAvailability.is_available,
+});
 
 export const availabilityService = {
-  // Get availability for a dentist
   getDentistAvailability: async (dentistId: string): Promise<DentistAvailability[]> => {
     try {
-      // Check if the table exists first by trying a query
       const { data, error } = await supabase
         .from('dentist_availabilities')
         .select('*')
         .eq('dentist_id', dentistId);
-      
+
       if (error) {
         console.error('Error fetching dentist availability:', error);
-        // If there's an error, use mock data for now
         return getMockAvailability(dentistId);
       }
-      
+
       if (data && data.length > 0) {
-        return data.map((item: DbAvailability) => mapAvailabilityFromDB(item));
+        return data.map((item) => mapAvailabilityFromDB(item));
       }
-      
-      // If no data found, return mock data
+
       return getMockAvailability(dentistId);
     } catch (error) {
       console.error('Error fetching dentist availability:', error);
@@ -55,18 +44,18 @@ export const availabilityService = {
     }
   },
 
-  // Set availability for a dentist
   setDentistAvailability: async (availability: Omit<DentistAvailability, 'id'>): Promise<string> => {
     try {
+      const insertData: DentistAvailabilitiesInsert = {
+        dentist_id: availability.dentistId,
+        day_of_week: availability.dayOfWeek,
+        start_time: availability.startTime,
+        end_time: availability.endTime,
+        is_available: availability.isAvailable,
+      };
       const { data, error } = await supabase
         .from('dentist_availabilities')
-        .insert({
-          dentist_id: availability.dentistId,
-          day_of_week: availability.dayOfWeek,
-          start_time: availability.startTime,
-          end_time: availability.endTime,
-          is_available: availability.isAvailable
-        })
+        .insert(insertData)
         .select()
         .single();
 
@@ -85,17 +74,17 @@ export const availabilityService = {
     }
   },
 
-  // Update availability
   updateAvailability: async (availability: DentistAvailability): Promise<void> => {
     try {
+      const updateData: DentistAvailabilitiesUpdate = {
+        day_of_week: availability.dayOfWeek,
+        start_time: availability.startTime,
+        end_time: availability.endTime,
+        is_available: availability.isAvailable,
+      };
       const { error } = await supabase
         .from('dentist_availabilities')
-        .update({
-          day_of_week: availability.dayOfWeek,
-          start_time: availability.startTime,
-          end_time: availability.endTime,
-          is_available: availability.isAvailable
-        })
+        .update(updateData)
         .eq('id', availability.id);
 
       if (error) {
@@ -112,7 +101,6 @@ export const availabilityService = {
     }
   },
 
-  // Delete availability
   deleteAvailability: async (id: string): Promise<void> => {
     try {
       const { error } = await supabase
@@ -135,32 +123,10 @@ export const availabilityService = {
   },
 };
 
-// Helper function to get mock availability data
 function getMockAvailability(dentistId: string): DentistAvailability[] {
   return [
-    {
-      id: "1",
-      dentistId,
-      dayOfWeek: 1, // Monday
-      startTime: "09:00",
-      endTime: "17:00",
-      isAvailable: true
-    },
-    {
-      id: "2",
-      dentistId,
-      dayOfWeek: 2, // Tuesday
-      startTime: "10:00",
-      endTime: "18:00",
-      isAvailable: true
-    },
-    {
-      id: "3",
-      dentistId,
-      dayOfWeek: 3, // Wednesday
-      startTime: "09:00",
-      endTime: "17:00",
-      isAvailable: true
-    }
+    { id: "1", dentistId, dayOfWeek: 1, startTime: "09:00", endTime: "17:00", isAvailable: true },
+    { id: "2", dentistId, dayOfWeek: 2, startTime: "10:00", endTime: "18:00", isAvailable: true },
+    { id: "3", dentistId, dayOfWeek: 3, startTime: "09:00", endTime: "17:00", isAvailable: true }
   ];
 }

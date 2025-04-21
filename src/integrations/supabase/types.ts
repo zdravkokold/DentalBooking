@@ -70,6 +70,47 @@ export type Database = {
           },
         ]
       }
+      dentist_availabilities: {
+        Row: {
+          created_at: string
+          day_of_week: number
+          dentist_id: string
+          end_time: string
+          id: string
+          is_available: boolean
+          start_time: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          day_of_week: number
+          dentist_id: string
+          end_time: string
+          id?: string
+          is_available?: boolean
+          start_time: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          day_of_week?: number
+          dentist_id?: string
+          end_time?: string
+          id?: string
+          is_available?: boolean
+          start_time?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dentist_availabilities_dentist_id_fkey"
+            columns: ["dentist_id"]
+            isOneToOne: false
+            referencedRelation: "dentists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dentists: {
         Row: {
           bio: string | null
@@ -110,9 +151,12 @@ export type Database = {
       }
       profiles: {
         Row: {
+          address: string | null
+          birth_date: string | null
           created_at: string
           email: string | null
           first_name: string | null
+          health_status: string | null
           id: string
           last_name: string | null
           phone: string | null
@@ -120,9 +164,12 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          address?: string | null
+          birth_date?: string | null
           created_at?: string
           email?: string | null
           first_name?: string | null
+          health_status?: string | null
           id: string
           last_name?: string | null
           phone?: string | null
@@ -130,9 +177,12 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          address?: string | null
+          birth_date?: string | null
           created_at?: string
           email?: string | null
           first_name?: string | null
+          health_status?: string | null
           id?: string
           last_name?: string | null
           phone?: string | null
@@ -176,7 +226,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      update_patient_extended_fields: {
+        Args: {
+          patient_id: string
+          health_status_val: string
+          address_val: string
+          birth_date_val: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

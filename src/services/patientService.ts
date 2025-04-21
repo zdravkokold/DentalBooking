@@ -2,9 +2,14 @@
 import { supabase } from '@/integrations/supabase/client';
 import { Patient } from '@/data/models';
 import { toast } from 'sonner';
+import type { Database } from "@/integrations/supabase/types";
+
+type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
+type ProfileInsert = Database["public"]["Tables"]["profiles"]["Insert"];
+type ProfileUpdate = Database["public"]["Tables"]["profiles"]["Update"];
 
 // Helper function to map database fields to our model interface
-const mapPatientFromDB = (profile: any): Patient => {
+const mapPatientFromDB = (profile: ProfileRow): Patient => {
   return {
     id: profile.id,
     name: `${profile.first_name || ''} ${profile.last_name || ''}`.trim(),
@@ -12,50 +17,32 @@ const mapPatientFromDB = (profile: any): Patient => {
     phone: profile.phone || '',
     healthStatus: profile.health_status || '',
     address: profile.address || '',
-    birthDate: profile.birth_date || ''
+    birthDate: profile.birth_date ? String(profile.birth_date) : ''
   };
 };
 
 export const patientService = {
-  // Get all patients
   getAllPatients: async (): Promise<Patient[]> => {
     try {
-      // First, check if the database schema includes the necessary columns
       const { data: profiles, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('role', 'patient');
-      
       if (error) {
         console.error('Error fetching patients:', error);
         toast.error('Грешка при зареждане на пациентите');
         return getMockPatients();
       }
-      
-      // If we have data from Supabase, map it to the Patient interface
       if (profiles && profiles.length > 0) {
-        // Check if the expected columns exist in the profiles table
-        return profiles.map(profile => ({
-          id: profile.id,
-          name: `${profile.first_name || ''} ${profile.last_name || ''}`.trim(),
-          email: profile.email || '',
-          phone: profile.phone || '',
-          // Use optional chaining for columns that might not exist
-          healthStatus: profile.health_status || '',
-          address: profile.address || '',
-          birthDate: profile.birth_date || ''
-        }));
+        return profiles.map(mapPatientFromDB);
       }
-
-      // For demo purposes, return mock patient data if we don't have any
       return getMockPatients();
     } catch (error) {
       console.error('Error fetching patients:', error);
-      return getMockPatients(); // Return empty array on error
+      return getMockPatients();
     }
   },
 
-  // Get patient by ID
   getPatientById: async (id: string): Promise<Patient | null> => {
     try {
       const { data: profile, error } = await supabase
@@ -63,27 +50,14 @@ export const patientService = {
         .select('*')
         .eq('id', id)
         .eq('role', 'patient')
-        .single();
-      
+        .maybeSingle();
       if (error) {
         console.error('Error fetching patient:', error);
         return null;
       }
-      
       if (profile) {
-        return {
-          id: profile.id,
-          name: `${profile.first_name || ''} ${profile.last_name || ''}`.trim(),
-          email: profile.email || '',
-          phone: profile.phone || '',
-          // Use optional accessors for columns that might not exist
-          healthStatus: profile.health_status || '',
-          address: profile.address || '',
-          birthDate: profile.birth_date || ''
-        };
+        return mapPatientFromDB(profile);
       }
-
-      // Mock data for demo if no patient found
       if (id === "p1") {
         return {
           id: "p1",
@@ -95,7 +69,6 @@ export const patientService = {
           birthDate: "1985-05-15"
         };
       }
-      
       return null;
     } catch (error) {
       console.error('Error fetching patient:', error);
@@ -103,38 +76,27 @@ export const patientService = {
     }
   },
 
-  // Update patient
   updatePatient: async (patient: Patient): Promise<void> => {
     try {
-      // Split name into first_name and last_name
       const nameParts = patient.name.split(' ');
       const firstName = nameParts[0] || '';
       const lastName = nameParts.slice(1).join(' ') || '';
 
-      // Check if health_status, address, and birth_date columns exist
-      // If not, exclude them from the update
+      const updateData: ProfileUpdate = {
+        first_name: firstName,
+        last_name: lastName,
+        email: patient.email,
+        phone: patient.phone,
+        role: 'patient',
+        health_status: patient.healthStatus,
+        address: patient.address,
+        birth_date: patient.birthDate ? patient.birthDate : null,
+      };
+
       const { error } = await supabase
         .from('profiles')
-        .update({
-          first_name: firstName,
-          last_name: lastName,
-          email: patient.email,
-          phone: patient.phone
-        })
+        .update(updateData)
         .eq('id', patient.id);
-
-      // Handle additional fields separately if they exist in schema
-      try {
-        await supabase.rpc('update_patient_extended_fields', {
-          patient_id: patient.id,
-          health_status_val: patient.healthStatus,
-          address_val: patient.address,
-          birth_date_val: patient.birthDate
-        });
-      } catch (extendedError) {
-        console.log('Extended fields update failed, may not exist in schema', extendedError);
-        // This is expected to fail if the columns don't exist
-      }
 
       if (error) {
         console.error('Error updating patient:', error);
@@ -150,24 +112,25 @@ export const patientService = {
     }
   },
 
-  // Create a new patient
   createPatient: async (patient: Omit<Patient, 'id'>): Promise<string> => {
     try {
-      // Split name into first_name and last_name
       const nameParts = patient.name.split(' ');
       const firstName = nameParts[0] || '';
       const lastName = nameParts.slice(1).join(' ') || '';
-
-      // Insert the basic profile information first
+      const insertData: ProfileInsert = {
+        id: crypto.randomUUID(),
+        first_name: firstName,
+        last_name: lastName,
+        email: patient.email,
+        phone: patient.phone,
+        role: 'patient',
+        health_status: patient.healthStatus,
+        address: patient.address,
+        birth_date: patient.birthDate ? patient.birthDate : null,
+      };
       const { data, error } = await supabase
         .from('profiles')
-        .insert({
-          first_name: firstName,
-          last_name: lastName,
-          email: patient.email,
-          phone: patient.phone,
-          role: 'patient'
-        })
+        .insert(insertData)
         .select()
         .single();
 
@@ -175,19 +138,6 @@ export const patientService = {
         console.error('Error creating patient:', error);
         toast.error('Грешка при създаване на пациент');
         throw error;
-      }
-
-      // Try to update extended fields if they exist
-      try {
-        await supabase.rpc('update_patient_extended_fields', {
-          patient_id: data.id,
-          health_status_val: patient.healthStatus || '',
-          address_val: patient.address || '',
-          birth_date_val: patient.birthDate || ''
-        });
-      } catch (extendedError) {
-        console.log('Extended fields update failed, may not exist in schema', extendedError);
-        // This is expected to fail if the columns don't exist
       }
 
       toast.success('Пациентът е създаден успешно');
@@ -200,7 +150,6 @@ export const patientService = {
   },
 };
 
-// Helper function for mock data
 function getMockPatients(): Patient[] {
   return [
     {
