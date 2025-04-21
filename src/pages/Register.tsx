@@ -69,6 +69,7 @@ const Register = () => {
         name: data.name,
         email: data.email,
         password: data.password,
+        confirmPassword: data.confirmPassword,
         phone: data.phone,
         birthDate: data.birthDate,
         role: 'patient'

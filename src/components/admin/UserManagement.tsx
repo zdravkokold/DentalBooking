@@ -101,7 +101,7 @@ const UserManagement = () => {
         name: data.name,
         email: data.email,
         password: data.password,
-        role: 'patient' as 'admin' | 'dentist' | 'patient' // Fixed type issue here
+        role: 'patient' as 'admin' | 'dentist' | 'patient'
       };
       
       await register(userData);

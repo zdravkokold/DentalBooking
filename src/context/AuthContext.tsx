@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -17,11 +16,12 @@ export interface RegisterData {
   email: string;
   password: string;
   confirmPassword?: string;
-  firstName: string;
-  lastName: string;
+  name: string;
   role?: string;
   phone?: string;
   birthDate?: string;
+  firstName?: string;
+  lastName?: string;
 }
 
 interface AuthContextType {
@@ -197,13 +197,23 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         return;
       }
       
+      // Parse name into first_name and last_name if not provided directly
+      let firstName = data.firstName;
+      let lastName = data.lastName;
+      
+      if (!firstName && !lastName && data.name) {
+        const nameParts = data.name.split(' ');
+        firstName = nameParts[0] || '';
+        lastName = nameParts.slice(1).join(' ') || '';
+      }
+      
       const { data: authData, error } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
         options: {
           data: {
-            first_name: data.firstName,
-            last_name: data.lastName,
+            first_name: firstName,
+            last_name: lastName,
             role: data.role || 'patient',
             phone: data.phone,
             birthDate: data.birthDate
