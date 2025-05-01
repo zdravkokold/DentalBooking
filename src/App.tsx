@@ -2,7 +2,7 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useEffect } from "react";
 import Index from "./pages/Index";
 import Appointments from "./pages/Appointments";
@@ -18,6 +18,7 @@ import Register from "./pages/Register";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { checkUpcomingAppointments } from "./services/notificationService";
 import { toast } from "sonner";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -77,10 +78,24 @@ const AppContent = () => {
         <Route path="/dentists/:id" element={<DentistDetail />} />
         <Route path="/services" element={<Services />} />
         
-        {/* All dashboards accessible for demo */}
-        <Route path="/admin" element={<AdminDashboard />} />
-        <Route path="/dentist" element={<DentistDashboard />} />
-        <Route path="/patient" element={<PatientDashboard />} />
+        {/* Protected routes with proper role-based access */}
+        <Route path="/admin" element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <AdminDashboard />
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/dentist" element={
+          <ProtectedRoute allowedRoles={['dentist']}>
+            <DentistDashboard />
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/patient" element={
+          <ProtectedRoute allowedRoles={['patient']}>
+            <PatientDashboard />
+          </ProtectedRoute>
+        } />
         
         {/* Catch-all route */}
         <Route path="*" element={<NotFound />} />

@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -48,7 +49,7 @@ const Index = () => {
             </div>
             <div className="hidden md:block">
               <img 
-                src="https://images.unsplash.com/photo-1629909613654-28e377c37b09?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3" 
+                src="https://images.unsplash.com/photo-1581091226825-a6a2a5aee158" 
                 alt="Dental Clinic" 
                 className="rounded-lg shadow-2xl w-full"
               />
