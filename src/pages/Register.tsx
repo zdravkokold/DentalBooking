@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -48,7 +48,27 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
 
 const Register = () => {
   const navigate = useNavigate();
-  const { register: registerUser, isLoading } = useAuth();
+  const { register: registerUser, isLoading, user } = useAuth();
+  
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user) {
+      console.log("User is already logged in with role:", user.role);
+      switch (user.role) {
+        case 'admin':
+          navigate('/admin');
+          break;
+        case 'dentist':
+          navigate('/dentist');
+          break;
+        case 'patient':
+          navigate('/patient');
+          break;
+        default:
+          navigate('/');
+      }
+    }
+  }, [user, navigate]);
   
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
@@ -64,6 +84,7 @@ const Register = () => {
 
   const onSubmit = async (data: RegisterFormValues) => {
     try {
+      console.log("Registration attempt with:", data.email);
       // All new registrations are automatically assigned the 'patient' role
       await registerUser({
         name: data.name,
@@ -75,9 +96,11 @@ const Register = () => {
         role: 'patient'
       });
       
+      toast.success('Регистрацията е успешна. Моля, влезте в своя акаунт.');
       navigate('/login');
     } catch (error) {
       console.error('Registration error:', error);
+      toast.error('Възникна грешка при регистрация. Моля, опитайте отново.');
     }
   };
 

@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -47,7 +48,54 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   useEffect(() => {
     const checkSession = async () => {
       try {
-        console.log("Auth state changed: INITIAL_SESSION");
+        console.log("Auth state changed: INITIAL_SESSION_CHECK");
+        // Set up auth state change listener first
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+          async (event, session) => {
+            console.log("Auth state changed:", event, session ? "with session" : "without session");
+            
+            if (event === 'SIGNED_IN' && session) {
+              const { data: userMetadata } = await supabase.auth.getUser();
+              
+              if (userMetadata && userMetadata.user) {
+                const metadata = userMetadata.user.user_metadata;
+                const userData: User = {
+                  id: userMetadata.user.id,
+                  name: `${metadata?.first_name || ''} ${metadata?.last_name || ''}`.trim() || userMetadata.user.email?.split('@')[0] || '',
+                  email: userMetadata.user.email || '',
+                  role: metadata?.role || 'patient',
+                  token: session.access_token
+                };
+                
+                console.log("User signed in:", userData);
+                
+                setUser(userData);
+                setIsAuthenticated(true);
+                
+                // Redirect based on role
+                switch (userData.role) {
+                  case 'admin':
+                    navigate('/admin');
+                    break;
+                  case 'dentist':
+                    navigate('/dentist');
+                    break;
+                  case 'patient':
+                    navigate('/patient');
+                    break;
+                  default:
+                    navigate('/');
+                }
+              }
+            } else if (event === 'SIGNED_OUT') {
+              console.log("User signed out");
+              setUser(null);
+              setIsAuthenticated(false);
+            }
+          }
+        );
+        
+        // Then check for existing session
         const { data: { session } } = await supabase.auth.getSession();
         
         if (session) {
@@ -57,22 +105,24 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             const metadata = userMetadata.user.user_metadata;
             const userData: User = {
               id: userMetadata.user.id,
-              name: `${metadata.first_name || ''} ${metadata.last_name || ''}`.trim() || userMetadata.user.email?.split('@')[0],
+              name: `${metadata?.first_name || ''} ${metadata?.last_name || ''}`.trim() || userMetadata.user.email?.split('@')[0] || '',
               email: userMetadata.user.email || '',
-              role: metadata.role || 'patient',
+              role: metadata?.role || 'patient',
               token: session.access_token
             };
             
-            console.log("Auth state changed: SIGNED_IN");
-            console.log("User signed in:", userData);
+            console.log("Existing session found:", userData);
             
             setUser(userData);
             setIsAuthenticated(true);
-            console.log("Mock user set:", userData);
           }
         }
         
         setIsLoading(false);
+        
+        return () => {
+          subscription.unsubscribe();
+        };
       } catch (error) {
         console.error("Error checking session:", error);
         setIsLoading(false);
@@ -80,102 +130,41 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
     
     checkSession();
-    
-    // Set up auth state change listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log("Auth state changed:", event);
-        
-        if (event === 'SIGNED_IN' && session) {
-          const { data: userMetadata } = await supabase.auth.getUser();
-          
-          if (userMetadata && userMetadata.user) {
-            const metadata = userMetadata.user.user_metadata;
-            const userData: User = {
-              id: userMetadata.user.id,
-              name: `${metadata.first_name || ''} ${metadata.last_name || ''}`.trim() || userMetadata.user.email?.split('@')[0],
-              email: userMetadata.user.email || '',
-              role: metadata.role || 'patient',
-              token: session.access_token
-            };
-            
-            console.log("User signed in:", userData);
-            
-            setUser(userData);
-            setIsAuthenticated(true);
-            console.log("Mock user set:", userData);
-            
-            // Redirect based on role
-            switch (userData.role) {
-              case 'admin':
-                navigate('/admin');
-                break;
-              case 'dentist':
-                navigate('/dentist');
-                break;
-              case 'patient':
-                navigate('/patient');
-                break;
-              default:
-                navigate('/');
-            }
-          }
-        } else if (event === 'SIGNED_OUT') {
-          setUser(null);
-          setIsAuthenticated(false);
-          navigate('/login');
-        }
-      }
-    );
-    
-    return () => {
-      subscription.unsubscribe();
-    };
   }, [navigate]);
 
   // Login function
   const login = async (email: string, password: string) => {
     try {
       setIsLoading(true);
+      console.log("Attempting login with email:", email);
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
       });
 
       if (error) {
-        toast.error('Невалиден имейл или парола');
         console.error("Login error:", error.message);
+        toast.error('Невалиден имейл или парола');
         return;
       }
 
-      if (data.user) {
+      if (data.user && data.session) {
         const metadata = data.user.user_metadata;
         const userData: User = {
           id: data.user.id,
-          name: `${metadata.first_name || ''} ${metadata.last_name || ''}`.trim() || data.user.email?.split('@')[0],
+          name: `${metadata?.first_name || ''} ${metadata?.last_name || ''}`.trim() || data.user.email?.split('@')[0] || '',
           email: data.user.email || '',
-          role: metadata.role || 'patient',
+          role: metadata?.role || 'patient',
           token: data.session?.access_token
         };
+        
+        console.log("Login successful:", userData);
         
         setUser(userData);
         setIsAuthenticated(true);
         
-        // Redirect based on role
-        switch (userData.role) {
-          case 'admin':
-            navigate('/admin');
-            break;
-          case 'dentist':
-            navigate('/dentist');
-            break;
-          case 'patient':
-            navigate('/patient');
-            break;
-          default:
-            navigate('/');
-        }
-        
+        // Redirect based on role will happen in onAuthStateChange
         toast.success('Успешен вход!');
       }
     } catch (err) {
@@ -207,6 +196,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         lastName = nameParts.slice(1).join(' ') || '';
       }
       
+      console.log("Registering with data:", {
+        email: data.email,
+        name: data.name,
+        role: data.role || 'patient',
+        firstName,
+        lastName
+      });
+      
       const { data: authData, error } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
@@ -222,10 +219,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       });
 
       if (error) {
+        console.error("Registration error:", error);
         toast.error(`Грешка при регистрация: ${error.message}`);
         return;
       }
 
+      console.log("Registration successful:", authData);
       toast.success('Регистрацията е успешна. Моля, проверете имейла си за потвърждение.');
       navigate('/login');
     } catch (err) {
@@ -243,6 +242,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const { error } = await supabase.auth.signOut();
       
       if (error) {
+        console.error("Logout error:", error);
         toast.error(`Грешка при изход: ${error.message}`);
         return;
       }

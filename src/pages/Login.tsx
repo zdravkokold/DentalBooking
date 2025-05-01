@@ -19,6 +19,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Mail, Lock } from 'lucide-react';
+import { toast } from 'sonner';
 
 const loginSchema = z.object({
   email: z.string().email('Невалиден имейл адрес'),
@@ -34,6 +35,7 @@ const Login = () => {
   // Redirect if already logged in
   useEffect(() => {
     if (user) {
+      console.log("User is logged in with role:", user.role);
       switch (user.role) {
         case 'admin':
           navigate('/admin');
@@ -60,11 +62,12 @@ const Login = () => {
 
   const onSubmit = async (data: LoginFormValues) => {
     try {
+      console.log("Login attempt with:", data.email);
       await login(data.email, data.password);
       // Navigation will happen in the useEffect above once the user state is updated
     } catch (error) {
-      // Error is already handled in the AuthContext
       console.error('Login submission error:', error);
+      toast.error('Възникна грешка при вход. Моля, опитайте отново.');
     }
   };
 
