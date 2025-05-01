@@ -220,9 +220,9 @@ const Register = () => {
                 />
                 
                 <Button 
-                  type="submit" 
-                  className="w-full bg-dental-teal hover:bg-opacity-90" 
+                  className="w-full bg-dental-teal hover:bg-opacity-90 text-white" 
                   disabled={isLoading}
+                  type="submit"
                 >
                   {isLoading ? 'Регистрация...' : 'Регистрация'}
                 </Button>
@@ -234,6 +234,7 @@ const Register = () => {
                       variant="link" 
                       className="p-0 h-auto font-semibold text-dental-teal"
                       onClick={() => navigate('/login')}
+                      type="button"
                     >
                       Вход
                     </Button>

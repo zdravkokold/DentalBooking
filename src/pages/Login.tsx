@@ -137,9 +137,9 @@ const Login = () => {
                 </div>
                 
                 <Button 
-                  type="submit" 
-                  className="w-full bg-dental-teal hover:bg-opacity-90" 
+                  className="w-full bg-dental-teal hover:bg-opacity-90 text-white" 
                   disabled={isLoading}
+                  type="submit"
                 >
                   {isLoading ? 'Вход...' : 'Вход'}
                 </Button>

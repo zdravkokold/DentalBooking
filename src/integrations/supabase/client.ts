@@ -9,8 +9,13 @@ const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: {
-    storage: localStorage,
-    persistSession: true,
     autoRefreshToken: true,
+    persistSession: true,
+    storage: localStorage,
   }
+});
+
+// Add debug logging to help identify any authentication issues
+supabase.auth.onAuthStateChange((event, session) => {
+  console.log('Supabase auth event:', event, session ? 'Session exists' : 'No session');
 });
