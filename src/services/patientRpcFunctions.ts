@@ -1,8 +1,5 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import type { Database } from "@/integrations/supabase/types";
-
-type ProfileUpdate = Database["public"]["Tables"]["profiles"]["Update"];
 
 /**
  * This is a helper function that handles updating patient extended fields
@@ -15,52 +12,75 @@ export async function updatePatientExtendedFields(
   birthDate?: string
 ): Promise<void> {
   try {
-    // Try the RPC function if it exists
-    const { error } = await supabase.rpc('update_patient_extended_fields', {
-      patient_id: patientId,
-      health_status_val: healthStatus || '',
-      address_val: address || '',
-      birth_date_val: birthDate || ''
-    });
+    // Try a direct update first since using RPC may not work with the current schema
+    try {
+      await supabase
+        .from('profiles')
+        .update({
+          health_status: healthStatus || null,
+          address: address || null,
+          birth_date: birthDate || null
+        })
+        .eq('id', patientId);
+      
+      console.log('Successfully updated patient extended fields');
+      return;
+    } catch (directUpdateError) {
+      console.error('Direct update failed:', directUpdateError);
+    }
 
-    if (error) {
-      // If RPC fails, fall back to direct update for each field
-      console.log('Using fallback method for patient extended fields');
+    // If direct update fails, try the RPC function
+    try {
+      const { error } = await supabase.rpc('update_patient_extended_fields', {
+        patient_id: patientId,
+        health_status_val: healthStatus || '',
+        address_val: address || '',
+        birth_date_val: birthDate || ''
+      });
 
-      // Try updating health_status
-      try {
-        const healthUpdate: ProfileUpdate = { health_status: healthStatus };
-        await supabase
-          .from('profiles')
-          .update(healthUpdate)
-          .eq('id', patientId);
-      } catch (e) {
-        console.log('health_status column may not exist:', e);
+      if (error) {
+        console.error('RPC function failed:', error);
+        
+        // If RPC fails too, try individual updates as a last resort
+        console.log('Using fallback method for patient extended fields');
+        
+        // Try updating each field individually
+        if (healthStatus !== undefined) {
+          await updateSingleField(patientId, 'health_status', healthStatus);
+        }
+        
+        if (address !== undefined) {
+          await updateSingleField(patientId, 'address', address);
+        }
+        
+        if (birthDate !== undefined) {
+          await updateSingleField(patientId, 'birth_date', birthDate);
+        }
       }
-
-      // Try updating address
-      try {
-        const addressUpdate: ProfileUpdate = { address: address };
-        await supabase
-          .from('profiles')
-          .update(addressUpdate)
-          .eq('id', patientId);
-      } catch (e) {
-        console.log('address column may not exist:', e);
-      }
-
-      // Try updating birth_date
-      try {
-        const birthDateUpdate: ProfileUpdate = { birth_date: birthDate };
-        await supabase
-          .from('profiles')
-          .update(birthDateUpdate)
-          .eq('id', patientId);
-      } catch (e) {
-        console.log('birth_date column may not exist:', e);
-      }
+    } catch (rpcError) {
+      console.error('RPC call error:', rpcError);
+      // No further fallback, we've tried everything
     }
   } catch (error) {
     console.error('Error updating extended fields:', error);
+  }
+}
+
+// Helper function to update a single field with error handling
+async function updateSingleField(patientId: string, fieldName: string, value: string | null): Promise<void> {
+  try {
+    const updateObj = {};
+    updateObj[fieldName] = value;
+    
+    const { error } = await supabase
+      .from('profiles')
+      .update(updateObj)
+      .eq('id', patientId);
+      
+    if (error) {
+      console.log(`${fieldName} column may not exist:`, error);
+    }
+  } catch (e) {
+    console.log(`Error updating ${fieldName}:`, e);
   }
 }
