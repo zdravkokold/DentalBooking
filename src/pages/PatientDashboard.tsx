@@ -22,6 +22,13 @@ import {
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogClose
+} from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import ServiceCard from '@/components/ServiceCard';
 import { services } from '@/data/mockData';
@@ -200,6 +207,17 @@ const PatientDashboard = () => {
     }).sort((a, b) => new Date(b.date) - new Date(a.date)); // Sort by descending date
   };
   
+  // Calculate days until appointment
+  const getDaysUntilAppointment = (dateString) => {
+    const appointmentDate = new Date(dateString);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    // Convert time difference to days and return as number
+    const diffTime = appointmentDate.getTime() - today.getTime();
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  };
+  
   const formatDate = (dateString) => {
     const options = { day: 'numeric', month: 'long', year: 'numeric' };
     return new Date(dateString).toLocaleDateString('bg-BG', options);
@@ -242,7 +260,7 @@ const PatientDashboard = () => {
                         <CardTitle className="flex items-center justify-between">
                           <span>Предстоящ час</span>
                           <Badge variant="outline" className="bg-blue-50 text-blue-700 hover:bg-blue-100">
-                            <Clock className="h-3 w-3 mr-1" /> След {Math.ceil((new Date(upcomingAppointments[0].date) - new Date())/(1000*60*60*24))} дни
+                            <Clock className="h-3 w-3 mr-1" /> След {getDaysUntilAppointment(upcomingAppointments[0].date)} дни
                           </Badge>
                         </CardTitle>
                       </CardHeader>
@@ -380,7 +398,7 @@ const PatientDashboard = () => {
                           </div>
                           <div>
                             <p className="text-sm font-medium">Напомняне за час</p>
-                            <p className="text-xs text-gray-500">Имате час след {upcomingAppointments.length > 0 ? Math.ceil((new Date(upcomingAppointments[0].date) - new Date())/(1000*60*60*24)) : '3'} дни</p>
+                            <p className="text-xs text-gray-500">Имате час след {upcomingAppointments.length > 0 ? getDaysUntilAppointment(upcomingAppointments[0].date) : '3'} дни</p>
                           </div>
                         </div>
                         <div className="flex items-start">
