@@ -15,10 +15,10 @@ const ServiceCard = ({ service }: ServiceCardProps) => {
   
   // Define a mapping of service images based on service names
   const serviceImages = {
-    "Профилактичен преглед": "https://images.unsplash.com/photo-1588776814546-daab30f9c6a4?q=80&w=1374&auto=format&fit=crop&ixlib=rb-4.0.3",
+    "Профилактичен преглед": "/lovable-uploads/e9104434-fe86-4a4d-8dea-f9d848542b87.png",
+    "Поставяне на имплант": "/lovable-uploads/74ce9f18-4776-4c18-a237-7465ec5a4d8d.png",
     "Лечение на кариес": "https://images.unsplash.com/photo-1607613009820-a29f7bb81c04?q=80&w=1480&auto=format&fit=crop&ixlib=rb-4.0.3",
     "Професионално избелване": "https://images.unsplash.com/photo-1563778084459-859099e48677?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.0.3",
-    "Поставяне на имплант": "https://images.unsplash.com/photo-1590424263400-5b8ceec7ef14?q=80&w=1528&auto=format&fit=crop&ixlib=rb-4.0.3",
     "Ортодонтско лечение": "https://images.unsplash.com/photo-1598256989800-fe5f95da9787?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.0.3",
     "Професионално почистване": "https://images.unsplash.com/photo-1606811841689-23dfddce3e95?q=80&w=1374&auto=format&fit=crop&ixlib=rb-4.0.3",
     "Вадене на зъб": "https://images.unsplash.com/photo-1600170384310-419ccbbc4020?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.0.3",

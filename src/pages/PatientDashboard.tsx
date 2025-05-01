@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -25,6 +26,7 @@ import { toast } from 'sonner';
 import ServiceCard from '@/components/ServiceCard';
 import { services } from '@/data/mockData';
 import { useAuth } from '@/context/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
 const PatientDashboard = () => {
   const today = new Date().toLocaleDateString('bg-BG', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
@@ -32,13 +34,90 @@ const PatientDashboard = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('overview');
+  const [userProfile, setUserProfile] = useState(null);
+  const [appointments, setAppointments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedAppointment, setSelectedAppointment] = useState(null);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+
+  // Fetch user profile data
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      if (!user?.id) return;
+      
+      try {
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+          
+        if (error) {
+          console.error('Error fetching user profile:', error);
+        } else if (profile) {
+          console.log('Fetched user profile:', profile);
+          setUserProfile(profile);
+        }
+      } catch (error) {
+        console.error('Error in fetchUserProfile:', error);
+      }
+    };
+    
+    fetchUserProfile();
+  }, [user?.id]);
+  
+  // Fetch user's appointments
+  useEffect(() => {
+    const fetchAppointments = async () => {
+      if (!user?.id) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from('appointments')
+          .select('*, services(*)')
+          .eq('patient_id', user.id)
+          .order('date', { ascending: true });
+          
+        if (error) {
+          console.error('Error fetching appointments:', error);
+        } else if (data) {
+          console.log('Fetched appointments:', data);
+          setAppointments(data);
+        }
+      } catch (error) {
+        console.error('Error in fetchAppointments:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchAppointments();
+  }, [user?.id]);
   
   // Функции за обработка на бутоните
-  const handleCancelAppointment = (appointmentId) => {
-    toast.success('Часът е отказан успешно', {
-      description: 'Вашият час беше отказан успешно.'
-    });
-    // В реалния случай бихме изпратили заявка към API за отмяна на часа
+  const handleCancelAppointment = async (appointmentId) => {
+    try {
+      const { error } = await supabase
+        .from('appointments')
+        .update({ status: 'cancelled' })
+        .eq('id', appointmentId);
+        
+      if (error) {
+        console.error('Error cancelling appointment:', error);
+        toast.error('Грешка при отказване на часа');
+        return;
+      }
+      
+      // Update local state to immediately remove the cancelled appointment
+      setAppointments(appointments.filter(a => a.id !== appointmentId));
+      
+      toast.success('Часът е отказан успешно', {
+        description: 'Вашият час беше отказан успешно.'
+      });
+    } catch (error) {
+      console.error('Error in handleCancelAppointment:', error);
+      toast.error('Грешка при отказване на часа');
+    }
   };
   
   const handleRescheduleAppointment = (appointmentId) => {
@@ -55,11 +134,9 @@ const PatientDashboard = () => {
     });
   };
   
-  const handleViewAppointmentDetails = (appointmentId) => {
-    toast.info('Преглед на детайли за час', {
-      description: `Преглеждане на информация за час #${appointmentId}`
-    });
-    // Тук бихме отворили модален прозорец с детайли или пренасочили към страница с детайли
+  const handleViewAppointmentDetails = (appointment) => {
+    setSelectedAppointment(appointment);
+    setIsDetailsOpen(true);
   };
   
   const handleEditProfile = () => {
@@ -68,6 +145,68 @@ const PatientDashboard = () => {
       description: 'Сега можете да редактирате вашия профил.'
     });
   };
+
+  // Format user name from profile
+  const getUserName = () => {
+    if (userProfile) {
+      return `${userProfile.first_name || ''} ${userProfile.last_name || ''}`.trim() || user?.name || 'Пациент';
+    }
+    return user?.name || 'Пациент';
+  };
+  
+  // Get user's birth date
+  const getBirthDate = () => {
+    if (userProfile && userProfile.birth_date) {
+      return userProfile.birth_date;
+    }
+    return '';
+  };
+  
+  // Get user's phone
+  const getPhone = () => {
+    if (userProfile && userProfile.phone) {
+      return userProfile.phone;
+    }
+    return '';
+  };
+  
+  // Get user's email
+  const getEmail = () => {
+    if (userProfile && userProfile.email) {
+      return userProfile.email;
+    }
+    return user?.email || '';
+  };
+  
+  // Get upcoming appointments
+  const getUpcomingAppointments = () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    return appointments.filter(appointment => {
+      const appointmentDate = new Date(appointment.date);
+      return appointmentDate >= today && appointment.status !== 'cancelled';
+    }).sort((a, b) => new Date(a.date) - new Date(b.date));
+  };
+  
+  // Get past appointments
+  const getPastAppointments = () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    return appointments.filter(appointment => {
+      const appointmentDate = new Date(appointment.date);
+      return appointmentDate < today || appointment.status === 'completed';
+    }).sort((a, b) => new Date(b.date) - new Date(a.date)); // Sort by descending date
+  };
+  
+  const formatDate = (dateString) => {
+    const options = { day: 'numeric', month: 'long', year: 'numeric' };
+    return new Date(dateString).toLocaleDateString('bg-BG', options);
+  };
+  
+  const upcomingAppointments = getUpcomingAppointments();
+  const pastAppointments = getPastAppointments();
   
   return (
     <div className="flex flex-col min-h-screen">
@@ -77,7 +216,7 @@ const PatientDashboard = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center">
             <div>
-              <h1 className="text-3xl font-bold text-white">Здравейте, {user?.name || 'Мария'}!</h1>
+              <h1 className="text-3xl font-bold text-white">Здравейте, {getUserName()}!</h1>
               <p className="text-dental-mint">{today}</p>
             </div>
           </div>
@@ -97,39 +236,51 @@ const PatientDashboard = () => {
             <TabsContent value="overview" className="mt-6">
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2 space-y-6">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center justify-between">
-                        <span>Предстоящ час</span>
-                        <Badge variant="outline" className="bg-blue-50 text-blue-700 hover:bg-blue-100">
-                          <Clock className="h-3 w-3 mr-1" /> След 3 дни
-                        </Badge>
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex items-center">
-                        <div className="bg-dental-lightGray p-3 rounded-full mr-4">
-                          <Calendar className="h-8 w-8 text-dental-teal" />
-                        </div>
-                        <div>
-                          <p className="font-bold text-lg">Петък, 19 април 2025</p>
-                          <p className="text-gray-600">14:30 - 15:15</p>
-                          <div className="mt-2">
-                            <Badge variant="outline" className="mr-2 bg-gray-50">Д-р Мария Иванова</Badge>
-                            <Badge variant="outline" className="bg-gray-50">Профилактичен преглед</Badge>
+                  {upcomingAppointments.length > 0 ? (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center justify-between">
+                          <span>Предстоящ час</span>
+                          <Badge variant="outline" className="bg-blue-50 text-blue-700 hover:bg-blue-100">
+                            <Clock className="h-3 w-3 mr-1" /> След {Math.ceil((new Date(upcomingAppointments[0].date) - new Date())/(1000*60*60*24))} дни
+                          </Badge>
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex items-center">
+                          <div className="bg-dental-lightGray p-3 rounded-full mr-4">
+                            <Calendar className="h-8 w-8 text-dental-teal" />
+                          </div>
+                          <div>
+                            <p className="font-bold text-lg">{formatDate(upcomingAppointments[0].date)}</p>
+                            <p className="text-gray-600">{upcomingAppointments[0].time}</p>
+                            <div className="mt-2">
+                              <Badge variant="outline" className="mr-2 bg-gray-50">Д-р Мария Иванова</Badge>
+                              <Badge variant="outline" className="bg-gray-50">
+                                {upcomingAppointments[0].services?.name || 'Преглед'}
+                              </Badge>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </CardContent>
-                    <CardFooter className="flex justify-between">
-                      <Button variant="outline" size="sm" onClick={() => handleCancelAppointment('upcoming-1')}>
-                        <X className="h-4 w-4 mr-1" /> Откажи
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={() => handleRescheduleAppointment('upcoming-1')}>
-                        <CalendarRange className="h-4 w-4 mr-1" /> Промени
-                      </Button>
-                    </CardFooter>
-                  </Card>
+                      </CardContent>
+                      <CardFooter className="flex justify-between">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => handleCancelAppointment(upcomingAppointments[0].id)}
+                        >
+                          <X className="h-4 w-4 mr-1" /> Откажи
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => handleRescheduleAppointment(upcomingAppointments[0].id)}
+                        >
+                          <CalendarRange className="h-4 w-4 mr-1" /> Промени
+                        </Button>
+                      </CardFooter>
+                    </Card>
+                  ) : null}
 
                   <Card>
                     <CardHeader>
@@ -138,16 +289,20 @@ const PatientDashboard = () => {
                     </CardHeader>
                     <CardContent>
                       <ul className="space-y-4">
-                        <li className="flex items-center">
-                          <div className="mr-4 h-10 w-10 flex items-center justify-center rounded-full bg-green-100">
-                            <CheckCircle className="h-5 w-5 text-green-600" />
-                          </div>
-                          <div className="flex-grow">
-                            <p className="font-medium">Профилактичен преглед</p>
-                            <p className="text-sm text-gray-500">19 април 2025, 14:30</p>
-                          </div>
-                          <Badge className="bg-green-100 text-green-800 hover:bg-green-200">Насрочен</Badge>
-                        </li>
+                        {upcomingAppointments.length > 0 ? (
+                          <li className="flex items-center">
+                            <div className="mr-4 h-10 w-10 flex items-center justify-center rounded-full bg-green-100">
+                              <CheckCircle className="h-5 w-5 text-green-600" />
+                            </div>
+                            <div className="flex-grow">
+                              <p className="font-medium">{upcomingAppointments[0].services?.name || 'Преглед'}</p>
+                              <p className="text-sm text-gray-500">
+                                {formatDate(upcomingAppointments[0].date)}, {upcomingAppointments[0].time}
+                              </p>
+                            </div>
+                            <Badge className="bg-green-100 text-green-800 hover:bg-green-200">Насрочен</Badge>
+                          </li>
+                        ) : null}
                         <li className="flex items-center">
                           <div className="mr-4 h-10 w-10 flex items-center justify-center rounded-full bg-gray-100">
                             <Circle className="h-5 w-5 text-gray-600" />
@@ -185,20 +340,26 @@ const PatientDashboard = () => {
                     <CardContent className="space-y-4">
                       <div className="flex items-center">
                         <User className="h-4 w-4 mr-2 text-gray-500" />
-                        <span className="text-gray-700">Мария Георгиева</span>
+                        <span className="text-gray-700">{getUserName()}</span>
                       </div>
-                      <div className="flex items-center">
-                        <Calendar className="h-4 w-4 mr-2 text-gray-500" />
-                        <span className="text-gray-700">15.06.1990</span>
-                      </div>
-                      <div className="flex items-center">
-                        <Phone className="h-4 w-4 mr-2 text-gray-500" />
-                        <span className="text-gray-700">+359 888 123 456</span>
-                      </div>
-                      <div className="flex items-center">
-                        <Mail className="h-4 w-4 mr-2 text-gray-500" />
-                        <span className="text-gray-700">maria@example.com</span>
-                      </div>
+                      {getBirthDate() && (
+                        <div className="flex items-center">
+                          <Calendar className="h-4 w-4 mr-2 text-gray-500" />
+                          <span className="text-gray-700">{getBirthDate()}</span>
+                        </div>
+                      )}
+                      {getPhone() && (
+                        <div className="flex items-center">
+                          <Phone className="h-4 w-4 mr-2 text-gray-500" />
+                          <span className="text-gray-700">{getPhone()}</span>
+                        </div>
+                      )}
+                      {getEmail() && (
+                        <div className="flex items-center">
+                          <Mail className="h-4 w-4 mr-2 text-gray-500" />
+                          <span className="text-gray-700">{getEmail()}</span>
+                        </div>
+                      )}
                     </CardContent>
                     <CardFooter>
                       <Button variant="outline" size="sm" className="w-full" onClick={handleEditProfile}>
@@ -219,7 +380,7 @@ const PatientDashboard = () => {
                           </div>
                           <div>
                             <p className="text-sm font-medium">Напомняне за час</p>
-                            <p className="text-xs text-gray-500">Имате час след 3 дни</p>
+                            <p className="text-xs text-gray-500">Имате час след {upcomingAppointments.length > 0 ? Math.ceil((new Date(upcomingAppointments[0].date) - new Date())/(1000*60*60*24)) : '3'} дни</p>
                           </div>
                         </div>
                         <div className="flex items-start">
@@ -276,37 +437,31 @@ const PatientDashboard = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
-                      <div className="flex items-center p-3 bg-blue-50 border-l-4 border-blue-400 rounded">
-                        <div className="mr-4">
-                          <p className="font-bold">19 Апр</p>
-                          <p className="text-xs">14:30</p>
-                        </div>
-                        <div className="flex-grow">
-                          <p className="font-medium">Профилактичен преглед</p>
-                          <p className="text-sm text-gray-500">Д-р Мария Иванова</p>
-                        </div>
-                        <div>
-                          <Button variant="outline" size="sm" onClick={() => handleCancelAppointment('appointment-1')}>
-                            <X className="h-4 w-4 mr-1" /> Откажи
-                          </Button>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center p-3 bg-blue-50 border-l-4 border-blue-400 rounded">
-                        <div className="mr-4">
-                          <p className="font-bold">15 Май</p>
-                          <p className="text-xs">10:00</p>
-                        </div>
-                        <div className="flex-grow">
-                          <p className="font-medium">Професионално почистване</p>
-                          <p className="text-sm text-gray-500">Д-р Петър Димитров</p>
-                        </div>
-                        <div>
-                          <Button variant="outline" size="sm" onClick={() => handleCancelAppointment('appointment-2')}>
-                            <X className="h-4 w-4 mr-1" /> Откажи
-                          </Button>
-                        </div>
-                      </div>
+                      {upcomingAppointments.length > 0 ? (
+                        upcomingAppointments.map((appointment) => (
+                          <div key={appointment.id} className="flex items-center p-3 bg-blue-50 border-l-4 border-blue-400 rounded">
+                            <div className="mr-4">
+                              <p className="font-bold">{formatDate(appointment.date).split(' ').slice(0, 2).join(' ')}</p>
+                              <p className="text-xs">{appointment.time}</p>
+                            </div>
+                            <div className="flex-grow">
+                              <p className="font-medium">{appointment.services?.name || 'Преглед'}</p>
+                              <p className="text-sm text-gray-500">Д-р Мария Иванова</p>
+                            </div>
+                            <div>
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                onClick={() => handleCancelAppointment(appointment.id)}
+                              >
+                                <X className="h-4 w-4 mr-1" /> Откажи
+                              </Button>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-center py-4 text-gray-500">Нямате предстоящи часове</p>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -320,56 +475,89 @@ const PatientDashboard = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    <div className="flex items-center p-3 bg-gray-50 border-l-4 border-gray-400 rounded">
-                      <div className="mr-4">
-                        <p className="font-bold">10 Дек 2024</p>
-                        <p className="text-xs">11:30</p>
-                      </div>
-                      <div className="flex-grow">
-                        <p className="font-medium">Профилактичен преглед</p>
-                        <p className="text-sm text-gray-500">Д-р Мария Иванова</p>
-                      </div>
-                      <div>
-                        <Button variant="outline" size="sm" onClick={() => handleViewAppointmentDetails('history-1')}>
-                          <FileText className="h-4 w-4 mr-1" /> Детайли
-                        </Button>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center p-3 bg-gray-50 border-l-4 border-gray-400 rounded">
-                      <div className="mr-4">
-                        <p className="font-bold">5 Юни 2024</p>
-                        <p className="text-xs">15:00</p>
-                      </div>
-                      <div className="flex-grow">
-                        <p className="font-medium">Лечение на кариес</p>
-                        <p className="text-sm text-gray-500">Д-р Мария Иванова</p>
-                      </div>
-                      <div>
-                        <Button variant="outline" size="sm" onClick={() => handleViewAppointmentDetails('history-2')}>
-                          <FileText className="h-4 w-4 mr-1" /> Детайли
-                        </Button>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center p-3 bg-gray-50 border-l-4 border-gray-400 rounded">
-                      <div className="mr-4">
-                        <p className="font-bold">20 Дек 2023</p>
-                        <p className="text-xs">10:00</p>
-                      </div>
-                      <div className="flex-grow">
-                        <p className="font-medium">Професионално почистване</p>
-                        <p className="text-sm text-gray-500">Д-р Петър Димитров</p>
-                      </div>
-                      <div>
-                        <Button variant="outline" size="sm" onClick={() => handleViewAppointmentDetails('history-3')}>
-                          <FileText className="h-4 w-4 mr-1" /> Детайли
-                        </Button>
-                      </div>
-                    </div>
+                    {pastAppointments.length > 0 ? (
+                      pastAppointments.map((appointment) => (
+                        <div key={appointment.id} className="flex items-center p-3 bg-gray-50 border-l-4 border-gray-400 rounded">
+                          <div className="mr-4">
+                            <p className="font-bold">{formatDate(appointment.date).split(' ').slice(0, 2).join(' ')}</p>
+                            <p className="text-xs">{appointment.time}</p>
+                          </div>
+                          <div className="flex-grow">
+                            <p className="font-medium">{appointment.services?.name || 'Преглед'}</p>
+                            <p className="text-sm text-gray-500">Д-р Мария Иванова</p>
+                          </div>
+                          <div>
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={() => handleViewAppointmentDetails(appointment)}
+                            >
+                              <FileText className="h-4 w-4 mr-1" /> Детайли
+                            </Button>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-center py-4 text-gray-500">Нямате история на посещения</p>
+                    )}
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Details Dialog */}
+              {selectedAppointment && (
+                <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Детайли за посещението</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 pt-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-sm text-gray-500">Дата:</p>
+                          <p className="font-medium">{formatDate(selectedAppointment.date)}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-500">Час:</p>
+                          <p className="font-medium">{selectedAppointment.time}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-500">Услуга:</p>
+                          <p className="font-medium">{selectedAppointment.services?.name || 'Преглед'}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-500">Статус:</p>
+                          <Badge className={
+                            selectedAppointment.status === 'completed' ? 'bg-green-100 text-green-800' :
+                            selectedAppointment.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                            'bg-blue-100 text-blue-800'
+                          }>
+                            {selectedAppointment.status === 'completed' ? 'Приключен' :
+                             selectedAppointment.status === 'cancelled' ? 'Отказан' :
+                             'Предстоящ'}
+                          </Badge>
+                        </div>
+                      </div>
+                      
+                      {selectedAppointment.notes && (
+                        <div>
+                          <p className="text-sm text-gray-500">Бележки:</p>
+                          <p className="text-sm">{selectedAppointment.notes}</p>
+                        </div>
+                      )}
+                      
+                      <div className="pt-4">
+                        <Button 
+                          className="w-full"
+                          onClick={() => setIsDetailsOpen(false)}
+                        >
+                          Затвори
+                        </Button>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              )}
             </TabsContent>
 
             <TabsContent value="profile" className="mt-6">
@@ -382,19 +570,36 @@ const PatientDashboard = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <label className="text-sm font-medium text-gray-700">Име</label>
-                        <input type="text" defaultValue="Мария Георгиева" className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md" />
+                        <input 
+                          type="text" 
+                          defaultValue={getUserName()} 
+                          className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md" 
+                        />
                       </div>
                       <div>
                         <label className="text-sm font-medium text-gray-700">Дата на раждане</label>
-                        <input type="date" defaultValue="1990-06-15" className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md" />
+                        <input 
+                          type="date" 
+                          defaultValue={getBirthDate()} 
+                          className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md" 
+                        />
                       </div>
                       <div>
                         <label className="text-sm font-medium text-gray-700">Телефон</label>
-                        <input type="tel" defaultValue="+359 888 123 456" className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md" />
+                        <input 
+                          type="tel" 
+                          defaultValue={getPhone()} 
+                          className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md" 
+                        />
                       </div>
                       <div>
                         <label className="text-sm font-medium text-gray-700">Имейл</label>
-                        <input type="email" defaultValue="maria@example.com" className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md" />
+                        <input 
+                          type="email" 
+                          defaultValue={getEmail()} 
+                          readOnly 
+                          className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md bg-gray-50" 
+                        />
                       </div>
                     </div>
                     <div className="pt-4">
