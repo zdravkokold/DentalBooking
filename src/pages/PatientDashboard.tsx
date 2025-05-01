@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
@@ -193,7 +192,7 @@ const PatientDashboard = () => {
     return appointments.filter(appointment => {
       const appointmentDate = new Date(appointment.date);
       return appointmentDate >= today && appointment.status !== 'cancelled';
-    }).sort((a, b) => new Date(a.date) - new Date(b.date));
+    }).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   };
   
   // Get past appointments
@@ -204,11 +203,11 @@ const PatientDashboard = () => {
     return appointments.filter(appointment => {
       const appointmentDate = new Date(appointment.date);
       return appointmentDate < today || appointment.status === 'completed';
-    }).sort((a, b) => new Date(b.date) - new Date(a.date)); // Sort by descending date
+    }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()); // Sort by descending date
   };
   
   // Calculate days until appointment
-  const getDaysUntilAppointment = (dateString) => {
+  const getDaysUntilAppointment = (dateString: string) => {
     const appointmentDate = new Date(dateString);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -218,8 +217,12 @@ const PatientDashboard = () => {
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   };
   
-  const formatDate = (dateString) => {
-    const options = { day: 'numeric', month: 'long', year: 'numeric' };
+  const formatDate = (dateString: string) => {
+    const options: Intl.DateTimeFormatOptions = { 
+      day: 'numeric', 
+      month: 'long', 
+      year: 'numeric' 
+    };
     return new Date(dateString).toLocaleDateString('bg-BG', options);
   };
   
@@ -630,6 +633,61 @@ const PatientDashboard = () => {
           </Tabs>
         </div>
       </main>
+      
+      {/* Details Dialog */}
+      {selectedAppointment && (
+        <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Детайли за посещението</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 pt-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-gray-500">Дата:</p>
+                  <p className="font-medium">{formatDate(selectedAppointment.date)}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Час:</p>
+                  <p className="font-medium">{selectedAppointment.time}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Услуга:</p>
+                  <p className="font-medium">{selectedAppointment.services?.name || 'Преглед'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Статус:</p>
+                  <Badge className={
+                    selectedAppointment.status === 'completed' ? 'bg-green-100 text-green-800' :
+                    selectedAppointment.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                    'bg-blue-100 text-blue-800'
+                  }>
+                    {selectedAppointment.status === 'completed' ? 'Приключен' :
+                     selectedAppointment.status === 'cancelled' ? 'Отказан' :
+                     'Предстоящ'}
+                  </Badge>
+                </div>
+              </div>
+              
+              {selectedAppointment.notes && (
+                <div>
+                  <p className="text-sm text-gray-500">Бележки:</p>
+                  <p className="text-sm">{selectedAppointment.notes}</p>
+                </div>
+              )}
+              
+              <div className="pt-4">
+                <Button 
+                  className="w-full"
+                  onClick={() => setIsDetailsOpen(false)}
+                >
+                  Затвори
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
       
       <Footer />
     </div>
