@@ -49,44 +49,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const checkSession = async () => {
       try {
         console.log("Auth state changed: INITIAL_SESSION_CHECK");
+        
         // Set up auth state change listener first
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
           async (event, session) => {
             console.log("Auth state changed:", event, session ? "with session" : "without session");
             
             if (event === 'SIGNED_IN' && session) {
-              const { data: userMetadata } = await supabase.auth.getUser();
-              
-              if (userMetadata && userMetadata.user) {
-                const metadata = userMetadata.user.user_metadata;
-                const userData: User = {
-                  id: userMetadata.user.id,
-                  name: `${metadata?.first_name || ''} ${metadata?.last_name || ''}`.trim() || userMetadata.user.email?.split('@')[0] || '',
-                  email: userMetadata.user.email || '',
-                  role: metadata?.role || 'patient',
-                  token: session.access_token
-                };
-                
-                console.log("User signed in:", userData);
-                
-                setUser(userData);
-                setIsAuthenticated(true);
-                
-                // Redirect based on role
-                switch (userData.role) {
-                  case 'admin':
-                    navigate('/admin');
-                    break;
-                  case 'dentist':
-                    navigate('/dentist');
-                    break;
-                  case 'patient':
-                    navigate('/patient');
-                    break;
-                  default:
-                    navigate('/');
-                }
-              }
+              await fetchAndSetUserData(session);
             } else if (event === 'SIGNED_OUT') {
               console.log("User signed out");
               setUser(null);
@@ -99,23 +69,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const { data: { session } } = await supabase.auth.getSession();
         
         if (session) {
-          const { data: userMetadata } = await supabase.auth.getUser();
-          
-          if (userMetadata && userMetadata.user) {
-            const metadata = userMetadata.user.user_metadata;
-            const userData: User = {
-              id: userMetadata.user.id,
-              name: `${metadata?.first_name || ''} ${metadata?.last_name || ''}`.trim() || userMetadata.user.email?.split('@')[0] || '',
-              email: userMetadata.user.email || '',
-              role: metadata?.role || 'patient',
-              token: session.access_token
-            };
-            
-            console.log("Existing session found:", userData);
-            
-            setUser(userData);
-            setIsAuthenticated(true);
-          }
+          await fetchAndSetUserData(session);
         }
         
         setIsLoading(false);
@@ -131,6 +85,63 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     
     checkSession();
   }, [navigate]);
+  
+  // Helper function to fetch user data and set user state
+  const fetchAndSetUserData = async (session) => {
+    try {
+      // Get user metadata from auth
+      const { data: userMetadata } = await supabase.auth.getUser();
+      
+      if (userMetadata && userMetadata.user) {
+        // Get additional profile data from profiles table
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', userMetadata.user.id)
+          .single();
+          
+        if (profileError && profileError.code !== 'PGRST116') {
+          // PGRST116 is the error for "no rows returned" - not a critical error
+          console.error("Error fetching profile:", profileError);
+        }
+        
+        const metadata = userMetadata.user.user_metadata;
+        const firstName = profileData?.first_name || metadata?.first_name || '';
+        const lastName = profileData?.last_name || metadata?.last_name || '';
+        const fullName = `${firstName} ${lastName}`.trim();
+        
+        const userData: User = {
+          id: userMetadata.user.id,
+          name: fullName || userMetadata.user.email?.split('@')[0] || '',
+          email: profileData?.email || userMetadata.user.email || '',
+          role: profileData?.role || metadata?.role || 'patient',
+          token: session.access_token
+        };
+        
+        console.log("User data fetched:", userData);
+        
+        setUser(userData);
+        setIsAuthenticated(true);
+        
+        // Redirect based on role
+        switch (userData.role) {
+          case 'admin':
+            navigate('/admin');
+            break;
+          case 'dentist':
+            navigate('/dentist');
+            break;
+          case 'patient':
+            navigate('/patient');
+            break;
+          default:
+            navigate('/');
+        }
+      }
+    } catch (err) {
+      console.error("Error fetching user data:", err);
+    }
+  };
 
   // Login function
   const login = async (email: string, password: string) => {
@@ -150,22 +161,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
 
       if (data.user && data.session) {
-        const metadata = data.user.user_metadata;
-        const userData: User = {
-          id: data.user.id,
-          name: `${metadata?.first_name || ''} ${metadata?.last_name || ''}`.trim() || data.user.email?.split('@')[0] || '',
-          email: data.user.email || '',
-          role: metadata?.role || 'patient',
-          token: data.session?.access_token
-        };
-        
-        console.log("Login successful:", userData);
-        
-        setUser(userData);
-        setIsAuthenticated(true);
-        
-        // Redirect based on role will happen in onAuthStateChange
         toast.success('Успешен вход!');
+        // Auth state change listener will handle setting the user state
       }
     } catch (err) {
       console.error("Login error:", err);
@@ -183,6 +180,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       // Validate confirm password
       if (data.confirmPassword && data.password !== data.confirmPassword) {
         toast.error('Паролите не съвпадат');
+        setIsLoading(false);
         return;
       }
       
@@ -201,7 +199,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         name: data.name,
         role: data.role || 'patient',
         firstName,
-        lastName
+        lastName,
+        phone: data.phone,
+        birthDate: data.birthDate
       });
       
       const { data: authData, error } = await supabase.auth.signUp({
@@ -213,7 +213,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             last_name: lastName,
             role: data.role || 'patient',
             phone: data.phone,
-            birthDate: data.birthDate
+            birth_date: data.birthDate
           }
         }
       });
@@ -225,7 +225,41 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
 
       console.log("Registration successful:", authData);
-      toast.success('Регистрацията е успешна. Моля, проверете имейла си за потвърждение.');
+      
+      // If registration is successful, check if we need to manually create a profile
+      if (authData?.user) {
+        try {
+          // Check if a profile already exists for this user
+          const { data: existingProfile } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', authData.user.id)
+            .single();
+            
+          if (!existingProfile) {
+            // Create profile manually if trigger didn't work
+            const { error: profileError } = await supabase
+              .from('profiles')
+              .insert({
+                id: authData.user.id,
+                first_name: firstName,
+                last_name: lastName,
+                email: data.email,
+                phone: data.phone,
+                birth_date: data.birthDate,
+                role: data.role || 'patient'
+              });
+              
+            if (profileError) {
+              console.error("Error creating profile:", profileError);
+            }
+          }
+        } catch (profileErr) {
+          console.error("Error checking/creating profile:", profileErr);
+        }
+      }
+      
+      toast.success('Регистрацията е успешна. Моля, влезте в своя акаунт.');
       navigate('/login');
     } catch (err) {
       console.error("Registration error:", err);

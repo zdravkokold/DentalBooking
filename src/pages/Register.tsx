@@ -84,10 +84,17 @@ const Register = () => {
 
   const onSubmit = async (data: RegisterFormValues) => {
     try {
-      console.log("Registration attempt with:", data.email);
+      console.log("Registration attempt with:", data);
+      // Parse name into first_name and last_name
+      const nameParts = data.name.split(' ');
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
+      
       // All new registrations are automatically assigned the 'patient' role
       await registerUser({
         name: data.name,
+        firstName: firstName,
+        lastName: lastName,
         email: data.email,
         password: data.password,
         confirmPassword: data.confirmPassword,
@@ -96,7 +103,6 @@ const Register = () => {
         role: 'patient'
       });
       
-      toast.success('Регистрацията е успешна. Моля, влезте в своя акаунт.');
       navigate('/login');
     } catch (error) {
       console.error('Registration error:', error);
