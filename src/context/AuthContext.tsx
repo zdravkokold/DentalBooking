@@ -65,6 +65,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               console.log("User signed out");
               setUser(null);
               setIsAuthenticated(false);
+              setIsLoading(false);
             }
           }
         );
