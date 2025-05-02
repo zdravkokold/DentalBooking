@@ -11,6 +11,10 @@ export interface User {
   email: string;
   role: string;
   token?: string;
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+  birthDate?: string;
 }
 
 export interface RegisterData {
@@ -70,9 +74,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         
         if (session) {
           await fetchAndSetUserData(session);
+        } else {
+          setIsLoading(false);
         }
-        
-        setIsLoading(false);
         
         return () => {
           subscription.unsubscribe();
@@ -108,12 +112,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const metadata = userMetadata.user.user_metadata;
         const firstName = profileData?.first_name || metadata?.first_name || '';
         const lastName = profileData?.last_name || metadata?.last_name || '';
-        const fullName = `${firstName} ${lastName}`.trim();
+        const fullName = `${firstName} ${lastName}`.trim() || userMetadata.user.email?.split('@')[0] || '';
         
         const userData: User = {
           id: userMetadata.user.id,
-          name: fullName || userMetadata.user.email?.split('@')[0] || '',
+          name: fullName,
+          firstName: firstName,
+          lastName: lastName,
           email: profileData?.email || userMetadata.user.email || '',
+          phone: profileData?.phone || metadata?.phone || '',
+          birthDate: profileData?.birth_date || metadata?.birth_date || '',
           role: profileData?.role || metadata?.role || 'patient',
           token: session.access_token
         };
@@ -122,6 +130,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         
         setUser(userData);
         setIsAuthenticated(true);
+        setIsLoading(false);
         
         // Redirect based on role
         switch (userData.role) {
@@ -135,11 +144,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             navigate('/patient');
             break;
           default:
-            navigate('/');
+            // Do not navigate by default to allow custom redirects
+            break;
         }
+      } else {
+        setIsLoading(false);
       }
     } catch (err) {
       console.error("Error fetching user data:", err);
+      setIsLoading(false);
     }
   };
 
@@ -157,6 +170,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (error) {
         console.error("Login error:", error.message);
         toast.error('Невалиден имейл или парола');
+        setIsLoading(false);
         return;
       }
 
@@ -167,7 +181,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     } catch (err) {
       console.error("Login error:", err);
       toast.error('Възникна грешка при вход');
-    } finally {
       setIsLoading(false);
     }
   };
@@ -221,6 +234,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (error) {
         console.error("Registration error:", error);
         toast.error(`Грешка при регистрация: ${error.message}`);
+        setIsLoading(false);
         return;
       }
 
