@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 
 // Define the type of appointment status for type safety
-type AppointmentStatus = 'pending' | 'confirmed' | 'completed' | 'cancelled';
+type AppointmentStatus = 'pending' | 'confirmed' | 'scheduled' | 'completed' | 'cancelled';
 
 // Helper function to map database fields to our model interface
 const mapAppointmentFromDB = (dbAppointment: any): Appointment => {
