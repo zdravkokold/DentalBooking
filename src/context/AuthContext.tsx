@@ -1,6 +1,6 @@
 
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -47,6 +47,27 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const navigate = useNavigate();
+  const location = useLocation();
+  
+  // Helper function to clean up auth state
+  const cleanupAuthState = () => {
+    // Remove standard auth tokens
+    localStorage.removeItem('supabase.auth.token');
+    
+    // Remove all Supabase auth keys from localStorage
+    Object.keys(localStorage).forEach((key) => {
+      if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
+        localStorage.removeItem(key);
+      }
+    });
+    
+    // Remove from sessionStorage if in use
+    Object.keys(sessionStorage || {}).forEach((key) => {
+      if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
+        sessionStorage.removeItem(key);
+      }
+    });
+  };
 
   // Check for existing session on component mount
   useEffect(() => {
@@ -60,7 +81,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             console.log("Auth state changed:", event, session ? "with session" : "without session");
             
             if (event === 'SIGNED_IN' && session) {
-              await fetchAndSetUserData(session);
+              // Use setTimeout to prevent potential deadlocks
+              setTimeout(() => {
+                fetchAndSetUserData(session);
+              }, 0);
             } else if (event === 'SIGNED_OUT') {
               console.log("User signed out");
               setUser(null);
@@ -103,7 +127,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           .from('profiles')
           .select('*')
           .eq('id', userMetadata.user.id)
-          .single();
+          .maybeSingle();
           
         if (profileError && profileError.code !== 'PGRST116') {
           // PGRST116 is the error for "no rows returned" - not a critical error
@@ -133,20 +157,25 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setIsAuthenticated(true);
         setIsLoading(false);
         
-        // Redirect based on role
-        switch (userData.role) {
-          case 'admin':
-            navigate('/admin');
-            break;
-          case 'dentist':
-            navigate('/dentist');
-            break;
-          case 'patient':
-            navigate('/patient');
-            break;
-          default:
-            // Do not navigate by default to allow custom redirects
-            break;
+        // Only redirect when coming from login or register pages
+        // This prevents unwanted redirects when browsing the site
+        const authPages = ['/login', '/register'];
+        if (authPages.includes(location.pathname)) {
+          // Redirect based on role
+          switch (userData.role) {
+            case 'admin':
+              navigate('/admin');
+              break;
+            case 'dentist':
+              navigate('/dentist');
+              break;
+            case 'patient':
+              navigate('/patient');
+              break;
+            default:
+              navigate('/');
+              break;
+          }
         }
       } else {
         setIsLoading(false);
@@ -162,6 +191,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       setIsLoading(true);
       console.log("Attempting login with email:", email);
+      
+      // Clean up existing auth state
+      cleanupAuthState();
+      
+      // Attempt global sign out
+      try {
+        await supabase.auth.signOut({ scope: 'global' });
+      } catch (err) {
+        // Continue even if this fails
+        console.log("Global sign out failed, continuing with login");
+      }
       
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -218,6 +258,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         birthDate: data.birthDate
       });
       
+      // Clean up existing auth state
+      cleanupAuthState();
+      
+      // Attempt global sign out
+      try {
+        await supabase.auth.signOut({ scope: 'global' });
+      } catch (err) {
+        // Continue even if this fails
+        console.log("Global sign out failed, continuing with registration");
+      }
+      
       const { data: authData, error } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
@@ -249,7 +300,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             .from('profiles')
             .select('*')
             .eq('id', authData.user.id)
-            .single();
+            .maybeSingle();
             
           if (!existingProfile) {
             // Create profile manually if trigger didn't work
@@ -288,16 +339,22 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const logout = async () => {
     try {
       setIsLoading(true);
-      const { error } = await supabase.auth.signOut();
       
-      if (error) {
-        console.error("Logout error:", error);
-        toast.error(`Грешка при изход: ${error.message}`);
-        return;
+      // Clean up auth state
+      cleanupAuthState();
+      
+      // Attempt global sign out
+      try {
+        await supabase.auth.signOut({ scope: 'global' });
+      } catch (err) {
+        // Ignore errors
+        console.log("Global sign out failed, continuing with logout");
       }
       
       setUser(null);
       setIsAuthenticated(false);
+      
+      // Always redirect to home page after logout
       navigate('/');
       toast.success('Успешен изход от системата');
     } catch (err) {

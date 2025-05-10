@@ -70,6 +70,7 @@ const AppContent = () => {
       <Toaster />
       <Sonner />
       <Routes>
+        {/* Public routes accessible by everyone */}
         <Route path="/" element={<Index />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />

@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { X, Menu } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
@@ -9,6 +9,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 const Navbar = () => {
   const { isAuthenticated, user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const isMobile = useIsMobile();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
@@ -36,11 +37,17 @@ const Navbar = () => {
     setIsMenuOpen(false);
   };
 
+  // Function to handle navigation and prevent dashboard redirect
+  const handleNavigation = (path) => {
+    navigate(path);
+    setIsMenuOpen(false);
+  };
+
   return (
     <nav className="bg-white shadow-sm sticky top-0 z-50">
       <div className="container mx-auto px-4 py-3">
         <div className="flex justify-between items-center">
-          <Link to="/" className="flex items-center space-x-2">
+          <Link to="/" className="flex items-center space-x-2" onClick={() => setIsMenuOpen(false)}>
             <span className="text-2xl font-bold text-dental-teal">DentaCare</span>
           </Link>
 
