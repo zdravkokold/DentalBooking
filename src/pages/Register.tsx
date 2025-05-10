@@ -1,256 +1,174 @@
 
-import React, { useEffect } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import { toast } from 'sonner';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { useAuth } from '@/context/AuthContext';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import { User, Mail, Lock, Phone, CalendarDays } from 'lucide-react';
-import { useAuth } from '@/context/AuthContext';
-
-const registerSchema = z.object({
-  name: z.string().min(2, 'Името трябва да бъде поне 2 символа'),
-  email: z.string().email('Невалиден имейл адрес'),
-  password: z.string().min(6, 'Паролата трябва да бъде поне 6 символа'),
-  confirmPassword: z.string(),
-  phone: z.string().regex(/^(\+359|0)[0-9]{9}$/, 'Невалиден телефонен номер'),
-  birthDate: z.string().refine((date) => {
-    const birthDate = new Date(date);
-    const today = new Date();
-    const age = today.getFullYear() - birthDate.getFullYear();
-    return age >= 18 && age <= 100;
-  }, 'Трябва да сте навършили 18 години')
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Паролите не съвпадат",
-  path: ["confirmPassword"],
-});
-
-type RegisterFormValues = z.infer<typeof registerSchema>;
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { toast } from 'sonner';
 
 const Register = () => {
-  const navigate = useNavigate();
-  const { register: registerUser, isLoading, user } = useAuth();
-  
-  // Redirect if already logged in
-  useEffect(() => {
-    if (user) {
-      console.log("User is already logged in with role:", user.role);
-      switch (user.role) {
-        case 'admin':
-          navigate('/admin');
-          break;
-        case 'dentist':
-          navigate('/dentist');
-          break;
-        case 'patient':
-          navigate('/patient');
-          break;
-        default:
-          navigate('/');
-      }
-    }
-  }, [user, navigate]);
-  
-  const form = useForm<RegisterFormValues>({
-    resolver: zodResolver(registerSchema),
-    defaultValues: {
-      name: '',
-      email: '',
-      password: '',
-      confirmPassword: '',
-      phone: '',
-      birthDate: '',
-    },
-  });
+  const [email, setEmail] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
+  const [confirmPassword, setConfirmPassword] = useState<string>('');
+  const [firstName, setFirstName] = useState<string>('');
+  const [lastName, setLastName] = useState<string>('');
+  const [phone, setPhone] = useState<string>('');
+  const [role, setRole] = useState<string>('patient');
+  const { register, isLoading } = useAuth();
 
-  const onSubmit = async (data: RegisterFormValues) => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!email || !password || !firstName || !lastName) {
+      toast.error('Моля, попълнете всички задължителни полета');
+      return;
+    }
+    
+    if (password !== confirmPassword) {
+      toast.error('Паролите не съвпадат');
+      return;
+    }
+    
     try {
-      console.log("Registration attempt with:", data);
-      // Parse name into first_name and last_name
-      const nameParts = data.name.split(' ');
-      const firstName = nameParts[0] || '';
-      const lastName = nameParts.slice(1).join(' ') || '';
-      
-      // All new registrations are automatically assigned the 'patient' role
-      await registerUser({
-        name: data.name,
-        firstName: firstName,
-        lastName: lastName,
-        email: data.email,
-        password: data.password,
-        confirmPassword: data.confirmPassword,
-        phone: data.phone,
-        birthDate: data.birthDate,
-        role: 'patient'
+      const name = `${firstName} ${lastName}`;
+      await register({
+        email,
+        password,
+        confirmPassword,
+        name,
+        firstName,
+        lastName,
+        phone,
+        role
       });
-      
-      navigate('/login');
     } catch (error) {
       console.error('Registration error:', error);
-      toast.error('Възникна грешка при регистрация. Моля, опитайте отново.');
     }
   };
-
+  
   return (
     <div className="flex flex-col min-h-screen">
       <Navbar />
       
-      <div className="flex-grow flex items-center justify-center bg-dental-lightGray py-12 px-4 sm:px-6 lg:px-8">
+      <main className="flex-grow flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-dental-lightGray">
         <Card className="w-full max-w-md shadow-lg">
-          <CardHeader className="text-center space-y-2">
-            <CardTitle className="text-2xl font-bold text-dental-teal">Регистрация</CardTitle>
-            <CardDescription>Създайте нов акаунт, за да използвате нашите услуги</CardDescription>
+          <CardHeader className="space-y-1">
+            <CardTitle className="text-2xl font-bold text-center">Регистрация</CardTitle>
+            <CardDescription className="text-center text-gray-500">
+              Създайте вашия акаунт
+            </CardDescription>
           </CardHeader>
+          
           <CardContent>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Име</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                          <Input placeholder="Име и фамилия" className="pl-10" {...field} />
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Имейл адрес</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                          <Input placeholder="вашият@имейл.com" className="pl-10" {...field} />
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="phone"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Телефон</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                          <Input placeholder="+359888123456" className="pl-10" {...field} />
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="birthDate"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Дата на раждане</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <CalendarDays className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                          <Input type="date" className="pl-10" {...field} />
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Парола</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                          <Input type="password" placeholder="••••••••" className="pl-10" {...field} />
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="confirmPassword"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Потвърди парола</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                          <Input type="password" placeholder="••••••••" className="pl-10" {...field} />
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <Button 
-                  className="w-full bg-dental-teal hover:bg-opacity-90 text-white" 
-                  disabled={isLoading}
-                  type="submit"
-                >
-                  {isLoading ? 'Регистрация...' : 'Регистрация'}
-                </Button>
-                
-                <div className="text-center pt-4">
-                  <p className="text-sm">
-                    Вече имате акаунт?{' '}
-                    <Button 
-                      variant="link" 
-                      className="p-0 h-auto font-semibold text-dental-teal"
-                      onClick={() => navigate('/login')}
-                      type="button"
-                    >
-                      Вход
-                    </Button>
-                  </p>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="firstName">Име *</Label>
+                  <Input 
+                    id="firstName" 
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    required
+                  />
                 </div>
-              </form>
-            </Form>
+                <div className="space-y-2">
+                  <Label htmlFor="lastName">Фамилия *</Label>
+                  <Input 
+                    id="lastName" 
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="email">Имейл *</Label>
+                <Input 
+                  id="email" 
+                  type="email" 
+                  placeholder="your@email.com" 
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="phone">Телефон</Label>
+                <Input 
+                  id="phone" 
+                  placeholder="+359 88 888 8888" 
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="role">Тип потребител</Label>
+                <Select 
+                  value={role} 
+                  onValueChange={setRole}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Изберете тип" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="patient">Пациент</SelectItem>
+                    <SelectItem value="dentist">Зъболекар</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="password">Парола *</Label>
+                <Input 
+                  id="password" 
+                  type="password" 
+                  placeholder="••••••••" 
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">Повтори парола *</Label>
+                <Input 
+                  id="confirmPassword" 
+                  type="password" 
+                  placeholder="••••••••" 
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                />
+              </div>
+              
+              <Button 
+                type="submit" 
+                className="w-full bg-dental-teal hover:bg-dental-teal/90"
+                disabled={isLoading}
+              >
+                {isLoading ? 'Регистриране...' : 'Регистрация'}
+              </Button>
+            </form>
           </CardContent>
+          
+          <CardFooter className="flex flex-col space-y-4">
+            <div className="text-center text-sm text-gray-600">
+              Вече имате акаунт?{' '}
+              <Link to="/login" className="font-medium text-blue-600 hover:text-blue-800">
+                Влезте тук
+              </Link>
+            </div>
+          </CardFooter>
         </Card>
-      </div>
+      </main>
       
       <Footer />
     </div>

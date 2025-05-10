@@ -1,73 +1,33 @@
 
-import React, { useEffect } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import { Mail, Lock } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 
-const loginSchema = z.object({
-  email: z.string().email('Невалиден имейл адрес'),
-  password: z.string().min(6, 'Паролата трябва да бъде поне 6 символа'),
-});
-
-type LoginFormValues = z.infer<typeof loginSchema>;
-
 const Login = () => {
-  const { login, isLoading, user } = useAuth();
+  const [email, setEmail] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
+  const { login, isLoading } = useAuth();
   const navigate = useNavigate();
-  
-  // Redirect if already logged in
-  useEffect(() => {
-    if (user) {
-      console.log("User is logged in with role:", user.role);
-      switch (user.role) {
-        case 'admin':
-          navigate('/admin');
-          break;
-        case 'dentist':
-          navigate('/dentist');
-          break;
-        case 'patient':
-          navigate('/patient');
-          break;
-        default:
-          navigate('/');
-      }
-    }
-  }, [user, navigate]);
-  
-  const form = useForm<LoginFormValues>({
-    resolver: zodResolver(loginSchema),
-    defaultValues: {
-      email: '',
-      password: '',
-    },
-  });
 
-  const onSubmit = async (data: LoginFormValues) => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!email || !password) {
+      toast.error('Моля, попълнете всички полета');
+      return;
+    }
+    
     try {
-      console.log("Login attempt with:", data.email);
-      await login(data.email, data.password);
-      // Navigation will happen in the useEffect above once the user state is updated
+      await login(email, password);
     } catch (error) {
-      console.error('Login submission error:', error);
-      toast.error('Възникна грешка при вход. Моля, опитайте отново.');
+      console.error('Login error:', error);
     }
   };
 
@@ -75,79 +35,66 @@ const Login = () => {
     <div className="flex flex-col min-h-screen">
       <Navbar />
       
-      <div className="flex-grow flex items-center justify-center bg-dental-lightGray py-12 px-4 sm:px-6 lg:px-8">
+      <main className="flex-grow flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-dental-lightGray">
         <Card className="w-full max-w-md shadow-lg">
-          <CardHeader className="text-center space-y-2">
-            <CardTitle className="text-2xl font-bold text-dental-teal">Вход в системата</CardTitle>
-            <CardDescription>Въведете вашите данни, за да продължите</CardDescription>
+          <CardHeader className="space-y-1">
+            <CardTitle className="text-2xl font-bold text-center">Вход в системата</CardTitle>
+            <CardDescription className="text-center text-gray-500">
+              Влезте с вашия имейл и парола
+            </CardDescription>
           </CardHeader>
+          
           <CardContent>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Имейл адрес</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                          <Input placeholder="вашият@имейл.com" className="pl-10" {...field} />
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Имейл</Label>
+                <Input 
+                  id="email" 
+                  type="email" 
+                  placeholder="your@email.com" 
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
                 />
-                
-                <FormField
-                  control={form.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Парола</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                          <Input type="password" placeholder="••••••••" className="pl-10" {...field} />
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
+              </div>
+              
+              <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Button 
-                    variant="link" 
-                    className="p-0 h-auto text-sm text-dental-teal"
-                    onClick={() => navigate('/register')}
-                    type="button"
-                  >
-                    Създаване на акаунт
-                  </Button>
-                  <Button 
-                    variant="link" 
-                    className="p-0 h-auto text-sm text-dental-teal"
-                    type="button"
-                  >
+                  <Label htmlFor="password">Парола</Label>
+                  <Link to="/forgot-password" className="text-sm text-blue-600 hover:text-blue-800">
                     Забравена парола?
-                  </Button>
+                  </Link>
                 </div>
-                
-                <Button 
-                  className="w-full bg-dental-teal hover:bg-opacity-90 text-white" 
-                  disabled={isLoading}
-                  type="submit"
-                >
-                  {isLoading ? 'Вход...' : 'Вход'}
-                </Button>
-              </form>
-            </Form>
+                <Input 
+                  id="password" 
+                  type="password" 
+                  placeholder="••••••••" 
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+              </div>
+              
+              <Button 
+                type="submit" 
+                className="w-full bg-dental-teal hover:bg-dental-teal/90"
+                disabled={isLoading}
+              >
+                {isLoading ? 'Влизане...' : 'Вход'}
+              </Button>
+            </form>
           </CardContent>
+          
+          <CardFooter className="flex flex-col space-y-4">
+            <div className="text-center text-sm text-gray-600">
+              Нямате акаунт?{' '}
+              <Link to="/register" className="font-medium text-blue-600 hover:text-blue-800">
+                Регистрирайте се
+              </Link>
+            </div>
+          </CardFooter>
         </Card>
-      </div>
+      </main>
       
       <Footer />
     </div>
