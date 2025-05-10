@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
@@ -16,7 +16,10 @@ import {
   CalendarRange,
   History,
   PlusCircle,
-  X
+  X,
+  Circle as CircleIcon,
+  Phone,
+  Mail
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -45,6 +48,17 @@ const PatientDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+
+  // Get tab from URL
+  const [searchParams] = useSearchParams();
+  const tabFromUrl = searchParams.get('tab');
+
+  useEffect(() => {
+    // Set active tab from URL if present
+    if (tabFromUrl && ['overview', 'appointments', 'history', 'profile'].includes(tabFromUrl)) {
+      setActiveTab(tabFromUrl);
+    }
+  }, [tabFromUrl]);
 
   // Fetch user profile data
   useEffect(() => {
@@ -78,9 +92,18 @@ const PatientDashboard = () => {
       if (!user?.id) return;
       
       try {
+        // Fetch appointments with service details using a join
         const { data, error } = await supabase
           .from('appointments')
-          .select('*, services(*)')
+          .select(`
+            *,
+            services:service_id (
+              name,
+              description,
+              price,
+              duration
+            )
+          `)
           .eq('patient_id', user.id)
           .order('date', { ascending: true });
           
@@ -114,8 +137,13 @@ const PatientDashboard = () => {
         return;
       }
       
-      // Update local state to immediately remove the cancelled appointment
-      setAppointments(appointments.filter(a => a.id !== appointmentId));
+      // Update local state to reflect the cancelled appointment
+      setAppointments(appointments.map(a => {
+        if (a.id === appointmentId) {
+          return { ...a, status: 'cancelled' };
+        }
+        return a;
+      }));
       
       toast.success('Часът е отказан успешно', {
         description: 'Вашият час беше отказан успешно.'
@@ -179,10 +207,8 @@ const PatientDashboard = () => {
   // Get user's email
   const getEmail = () => {
     if (userProfile && userProfile.email) {
-      return userProfile.email;
-    }
-    return user?.email || '';
-  };
+      return user?.email || '';
+    };
   
   // Get upcoming appointments
   const getUpcomingAppointments = () => {
@@ -254,7 +280,9 @@ const PatientDashboard = () => {
               <TabsTrigger value="profile">Профил</TabsTrigger>
             </TabsList>
             
+            {/* Overview Tab */}
             <TabsContent value="overview" className="mt-6">
+              {/* Overview Tab Content */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2 space-y-6">
                   {upcomingAppointments.length > 0 ? (
@@ -301,7 +329,21 @@ const PatientDashboard = () => {
                         </Button>
                       </CardFooter>
                     </Card>
-                  ) : null}
+                  ) : (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Нямате предстоящи часове</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-gray-600 mb-4">
+                          Все още не сте запазили час. Можете да запазите нов час, като кликнете на бутона по-долу.
+                        </p>
+                        <Button className="bg-dental-teal hover:bg-dental-teal/90" onClick={handleBookAppointment}>
+                          <CalendarDays className="h-4 w-4 mr-1" /> Запазете час сега
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  )}
 
                   <Card>
                     <CardHeader>
@@ -326,7 +368,7 @@ const PatientDashboard = () => {
                         ) : null}
                         <li className="flex items-center">
                           <div className="mr-4 h-10 w-10 flex items-center justify-center rounded-full bg-gray-100">
-                            <Circle className="h-5 w-5 text-gray-600" />
+                            <CircleIcon className="h-5 w-5 text-gray-600" />
                           </div>
                           <div className="flex-grow">
                             <p className="font-medium">Лечение на кариес (горе вляво)</p>
@@ -338,7 +380,7 @@ const PatientDashboard = () => {
                         </li>
                         <li className="flex items-center">
                           <div className="mr-4 h-10 w-10 flex items-center justify-center rounded-full bg-gray-100">
-                            <Circle className="h-5 w-5 text-gray-600" />
+                            <CircleIcon className="h-5 w-5 text-gray-600" />
                           </div>
                           <div className="flex-grow">
                             <p className="font-medium">Професионално почистване</p>
@@ -438,6 +480,7 @@ const PatientDashboard = () => {
               </div>
             </TabsContent>
             
+            {/* Appointments Tab */}
             <TabsContent value="appointments" className="mt-6">
               <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
                 <Card className="lg:col-span-1">
@@ -458,7 +501,9 @@ const PatientDashboard = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
-                      {upcomingAppointments.length > 0 ? (
+                      {loading ? (
+                        <p className="text-center py-4">Зареждане...</p>
+                      ) : upcomingAppointments.length > 0 ? (
                         upcomingAppointments.map((appointment) => (
                           <div key={appointment.id} className="flex items-center p-3 bg-blue-50 border-l-4 border-blue-400 rounded">
                             <div className="mr-4">
@@ -489,6 +534,7 @@ const PatientDashboard = () => {
               </div>
             </TabsContent>
 
+            {/* History Tab */}
             <TabsContent value="history" className="mt-6">
               <Card>
                 <CardHeader>
@@ -496,7 +542,9 @@ const PatientDashboard = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {pastAppointments.length > 0 ? (
+                    {loading ? (
+                      <p className="text-center py-4">Зареждане...</p>
+                    ) : pastAppointments.length > 0 ? (
                       pastAppointments.map((appointment) => (
                         <div key={appointment.id} className="flex items-center p-3 bg-gray-50 border-l-4 border-gray-400 rounded">
                           <div className="mr-4">
@@ -581,6 +629,7 @@ const PatientDashboard = () => {
               )}
             </TabsContent>
 
+            {/* Profile Tab */}
             <TabsContent value="profile" className="mt-6">
               <Card>
                 <CardHeader>
@@ -707,17 +756,18 @@ const Circle = (props) => (
   </svg>
 );
 
-const Phone = (props) => (
+const PhoneIcon = (props) => (
   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
     <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
   </svg>
 );
 
-const Mail = (props) => (
+const MailIcon = (props) => (
   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
     <rect width="20" height="16" x="2" y="4" rx="2" />
     <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
   </svg>
 );
 
-export default PatientDashboard;
+const Circle = (props) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0

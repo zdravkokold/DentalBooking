@@ -22,40 +22,7 @@ const Appointments = () => {
     if (selectedDentist && selectedDentist !== 'all') params.append('dentistId', selectedDentist);
     if (selectedService && selectedService !== 'all') params.append('serviceId', selectedService);
     setSearchParams(params);
-    
-    // This is where you would fetch data from your backend if needed
-    // Example: fetchDentistsOrServices();
   }, [selectedDentist, selectedService, setSearchParams]);
-
-  // This function could be used to fetch data from your C# .NET backend
-  const fetchDentistsOrServices = async () => {
-    try {
-      setIsLoading(true);
-      
-      // Example API call to your .NET backend
-      /*
-      const response = await fetch('https://your-api-url/api/dentists', {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        }
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        // Process your data here
-      } else {
-        throw new Error('Failed to fetch data');
-      }
-      */
-      
-    } catch (error) {
-      console.error("Error fetching data:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleDentistChange = (value: string) => {
     setSelectedDentist(value);
@@ -66,34 +33,7 @@ const Appointments = () => {
   };
 
   const handleAppointmentSelected = async (appointmentId: string) => {
-    console.log('Appointment selected:', appointmentId);
-    
-    // In a real application with a .NET backend, you might make an API call here
-    // For example:
-    /*
-    try {
-      const response = await fetch(`https://your-api-url/api/appointments/${appointmentId}/reserve`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
-        body: JSON.stringify({
-          userId: currentUserId,
-          serviceId: selectedService !== 'all' ? selectedService : undefined
-        })
-      });
-      
-      if (response.ok) {
-        const confirmationData = await response.json();
-        // Handle successful booking, maybe redirect to a confirmation page
-      } else {
-        // Handle error state
-      }
-    } catch (error) {
-      console.error('Error booking appointment:', error);
-    }
-    */
+    console.log('Appointment booked:', appointmentId);
   };
 
   return (
@@ -180,6 +120,7 @@ const Appointments = () => {
                 <CardContent>
                   <CalendarComponent 
                     dentistId={selectedDentist !== 'all' ? selectedDentist : undefined}
+                    serviceId={selectedService !== 'all' ? selectedService : undefined}
                     onAppointmentSelected={handleAppointmentSelected} 
                   />
                 </CardContent>

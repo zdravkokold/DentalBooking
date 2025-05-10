@@ -11,6 +11,7 @@ import { Calendar, CalendarDays, Clock, CheckCircle, AlertCircle, ClipboardEdit,
 import { appointmentService } from '@/services/appointmentService';
 import { Appointment } from '@/data/models';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 // Import dentist-specific components
 import AppointmentHistory from '@/components/dentist/AppointmentHistory';
@@ -32,18 +33,53 @@ const DentistDashboard = () => {
   useEffect(() => {
     const loadAppointments = async () => {
       try {
-        // For demo purposes, we'll use a hardcoded dentist ID
-        const dentistId = "d1"; // Replace with actual dentist ID when available
-        const appointmentsData = await appointmentService.getDentistAppointments(dentistId);
-        setAppointments(appointmentsData);
+        // For demo purposes, we'll use the logged-in dentist's ID
+        // In a real scenario, this would come from the user object
+        const dentistId = user?.id || "d1";
+        
+        // Fetch appointments from Supabase with services details
+        const { data, error } = await supabase
+          .from('appointments')
+          .select(`
+            *,
+            services:service_id (
+              name,
+              description,
+              price,
+              duration
+            )
+          `)
+          .eq('dentist_id', dentistId)
+          .order('date', { ascending: true });
+          
+        if (error) {
+          throw error;
+        }
+        
+        // Map the appointments to our app model
+        const mappedAppointments = data ? data.map(appointment => ({
+          id: appointment.id,
+          patientId: appointment.patient_id,
+          dentistId: appointment.dentist_id,
+          serviceId: appointment.service_id,
+          date: appointment.date,
+          startTime: appointment.time,
+          endTime: calculateEndTime(appointment.time, appointment.services?.duration || 60),
+          status: appointment.status || 'pending',
+          notes: appointment.notes || '',
+          createdAt: appointment.created_at,
+          service: appointment.services
+        })) : [];
+        
+        setAppointments(mappedAppointments);
         
         // Calculate statistics
         const today = new Date().toISOString().split('T')[0];
         setStats({
-          upcoming: appointmentsData.filter(a => a.date > today && a.status === 'scheduled').length,
-          today: appointmentsData.filter(a => a.date === today && a.status === 'scheduled').length,
-          completed: appointmentsData.filter(a => a.status === 'completed').length,
-          cancelled: appointmentsData.filter(a => a.status === 'cancelled').length
+          upcoming: mappedAppointments.filter(a => a.date > today && a.status === 'scheduled').length,
+          today: mappedAppointments.filter(a => a.date === today && a.status === 'scheduled').length,
+          completed: mappedAppointments.filter(a => a.status === 'completed').length,
+          cancelled: mappedAppointments.filter(a => a.status === 'cancelled').length
         });
       } catch (error) {
         console.error('Failed to load appointments:', error);
@@ -54,7 +90,15 @@ const DentistDashboard = () => {
     };
 
     loadAppointments();
-  }, []);
+  }, [user?.id]);
+
+  // Helper function to calculate end time
+  const calculateEndTime = (startTime: string, durationMinutes: number): string => {
+    const [hours, minutes] = startTime.split(':').map(Number);
+    const endDate = new Date();
+    endDate.setHours(hours, minutes + durationMinutes);
+    return `${String(endDate.getHours()).padStart(2, '0')}:${String(endDate.getMinutes()).padStart(2, '0')}`;
+  };
 
   // Функции за обработка на бутоните
   const handleViewDetails = (appointmentId) => {
@@ -78,8 +122,35 @@ const DentistDashboard = () => {
     // Тук бихме изпратили напомняне на пациента
   };
 
-  // For demo purposes, we'll use a hardcoded dentist name
-  const dentistName = user?.name || "Д-р Иванов";
+  // For demo purposes, we'll try to get dentist name from user profile
+  const [dentistName, setDentistName] = useState("Д-р Иванов");
+  
+  useEffect(() => {
+    const fetchDentistName = async () => {
+      if (!user?.id) return;
+      
+      try {
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('first_name, last_name')
+          .eq('id', user.id)
+          .single();
+          
+        if (error) {
+          console.error('Error fetching dentist profile:', error);
+        } else if (profile) {
+          const name = `Д-р ${profile.first_name || ''} ${profile.last_name || ''}`.trim();
+          if (name !== 'Д-р') {
+            setDentistName(name);
+          }
+        }
+      } catch (error) {
+        console.error('Error in fetchDentistName:', error);
+      }
+    };
+    
+    fetchDentistName();
+  }, [user?.id]);
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -152,7 +223,10 @@ const DentistDashboard = () => {
                 <p>Зареждане...</p>
               ) : appointments.length > 0 ? (
                 <div className="space-y-4">
-                  {appointments.slice(0, 5).map((appointment) => (
+                  {appointments
+                    .filter(appointment => appointment.status === 'scheduled' || appointment.status === 'pending')
+                    .slice(0, 5)
+                    .map((appointment) => (
                     <div 
                       key={appointment.id} 
                       className="flex justify-between items-center p-4 rounded-lg border border-gray-200 hover:bg-gray-50"
@@ -161,6 +235,9 @@ const DentistDashboard = () => {
                         <p className="font-medium">Пациент #{appointment.patientId}</p>
                         <p className="text-sm text-gray-500">
                           {new Date(appointment.date).toLocaleDateString('bg-BG')}, {appointment.startTime}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {appointment.service?.name || 'Преглед'}
                         </p>
                       </div>
                       <div className="flex gap-2">

@@ -4,11 +4,14 @@ import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { appointmentSlots } from '@/data/mockData';
-import { format, isSameDay } from 'date-fns';
+import { format, isSameDay, parseISO } from 'date-fns';
 import { bg } from 'date-fns/locale';
 import { ChevronRight, Check, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useAuth } from '@/context/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { useNavigate } from 'react-router-dom';
 
 interface TimeSlot {
   id: string;
@@ -19,12 +22,17 @@ interface TimeSlot {
 
 interface CalendarComponentProps {
   dentistId?: string;
+  serviceId?: string;
   onAppointmentSelected?: (appointmentId: string) => void;
 }
 
-const CalendarComponent = ({ dentistId, onAppointmentSelected }: CalendarComponentProps) => {
+const CalendarComponent = ({ dentistId, serviceId, onAppointmentSelected }: CalendarComponentProps) => {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
+  const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const { user } = useAuth();
+  const navigate = useNavigate();
   
   // Get available dates (dates that have at least one available slot)
   const availableDates = Array.from(
@@ -90,56 +98,73 @@ const CalendarComponent = ({ dentistId, onAppointmentSelected }: CalendarCompone
     setSelectedSlotId(null); // Reset selected slot when date changes
   };
 
-  const handleSlotSelect = (slotId: string) => {
-    setSelectedSlotId(slotId);
+  const handleSlotSelect = (slot: TimeSlot) => {
+    setSelectedSlotId(slot.id);
+    setSelectedSlot(slot);
   };
 
   const handleBookAppointment = async () => {
-    if (selectedSlotId) {
+    if (!user) {
+      toast.error("Моля, влезте в акаунта си за да запазите час", {
+        description: "Пренасочване към страницата за вход..."
+      });
+      navigate('/login');
+      return;
+    }
+
+    if (selectedSlotId && selectedDate) {
+      setIsLoading(true);
       try {
-        // In a real app, this would make an API call to book the appointment
-        // Example for future .NET API integration:
-        /*
-        const appointmentData = {
-          appointmentSlotId: selectedSlotId,
-          dentistId: dentistId || '',
-          date: format(selectedDate!, 'yyyy-MM-dd'),
-          time: timeSlots.find(slot => slot.id === selectedSlotId)?.startTime || '',
-        };
-
-        const response = await fetch('https://your-api-url/api/appointments', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          },
-          body: JSON.stringify(appointmentData),
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          // Handle successful response
-        } else {
-          // Handle error response
-          throw new Error('Failed to book appointment');
-        }
-        */
-
-        // For now, just show a success toast
-        const selectedSlot = timeSlots.find(slot => slot.id === selectedSlotId);
+        // Format date for database
+        const formattedDate = format(selectedDate, 'yyyy-MM-dd');
         
+        if (!selectedSlot) {
+          throw new Error('No slot selected');
+        }
+
+        // Choose dentist ID - if not provided, use a default one for demo
+        const finalDentistId = dentistId || "d1";
+        
+        // Choose service ID - if not provided, use a default one for demo
+        const finalServiceId = serviceId || "s1";
+
+        // Create appointment in Supabase
+        const { data, error } = await supabase
+          .from('appointments')
+          .insert({
+            patient_id: user.id,
+            dentist_id: finalDentistId,
+            service_id: finalServiceId,
+            date: formattedDate,
+            time: selectedSlot.startTime,
+            status: 'scheduled'
+          })
+          .select()
+          .single();
+
+        if (error) {
+          console.error('Error booking appointment:', error);
+          throw error;
+        }
+
         toast.success("Часът е запазен успешно!", {
-          description: `Вашият час беше успешно запазен за ${format(selectedDate!, 'dd MMMM yyyy', { locale: bg })} в ${selectedSlot?.startTime} ч.`
+          description: `Вашият час беше успешно запазен за ${format(selectedDate, 'dd MMMM yyyy', { locale: bg })} в ${selectedSlot.startTime} ч.`
         });
         
-        if (onAppointmentSelected) {
-          onAppointmentSelected(selectedSlotId);
+        if (onAppointmentSelected && data) {
+          onAppointmentSelected(data.id);
         }
-      } catch (error) {
+        
+        // Navigate to patient dashboard appointments tab
+        navigate('/patient?tab=appointments');
+
+      } catch (error: any) {
         toast.error("Възникна грешка при запазване на часа", {
-          description: "Моля, опитайте отново по-късно или се свържете с нас."
+          description: error.message || "Моля, опитайте отново по-късно или се свържете с нас."
         });
         console.error("Booking error:", error);
+      } finally {
+        setIsLoading(false);
       }
     }
   };
@@ -242,7 +267,7 @@ const CalendarComponent = ({ dentistId, onAppointmentSelected }: CalendarCompone
                           }
                           transition-all
                         `}
-                        onClick={() => handleSlotSelect(slot.id)}
+                        onClick={() => handleSlotSelect(slot)}
                       >
                         {selectedSlotId === slot.id && <Check className="mr-1 h-4 w-4" />}
                         {slot.startTime}
@@ -259,8 +284,9 @@ const CalendarComponent = ({ dentistId, onAppointmentSelected }: CalendarCompone
               <Button 
                 className="bg-dental-teal hover:bg-dental-teal/90"
                 onClick={handleBookAppointment}
+                disabled={isLoading}
               >
-                Запази час <ChevronRight className="ml-1 h-4 w-4" />
+                {isLoading ? 'Обработване...' : 'Запази час'} {!isLoading && <ChevronRight className="ml-1 h-4 w-4" />}
               </Button>
             </div>
           )}

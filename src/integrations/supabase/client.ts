@@ -53,6 +53,20 @@ export type Database = {
   };
 };
 
+// Ensure we have localStorage available
+const getStorage = () => {
+  if (typeof window !== 'undefined' && window.localStorage) {
+    return window.localStorage;
+  }
+  
+  // If localStorage is not available, provide a no-op implementation
+  return {
+    getItem: () => null,
+    setItem: () => {},
+    removeItem: () => {}
+  };
+};
+
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
@@ -60,7 +74,7 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
   auth: {
     autoRefreshToken: true,
     persistSession: true,
-    storage: localStorage,
+    storage: getStorage(),
     detectSessionInUrl: true,
   }
 });
