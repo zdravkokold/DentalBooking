@@ -18,9 +18,19 @@ import AppointmentHistory from '@/components/dentist/AppointmentHistory';
 import PatientManagement from '@/components/dentist/PatientManagement';
 import ScheduleManagement from '@/components/dentist/ScheduleManagement';
 
+// Define a type for appointments with service information from Supabase
+interface AppointmentWithService extends Appointment {
+  services?: {
+    name: string;
+    description?: string;
+    price: number;
+    duration: number;
+  }
+}
+
 const DentistDashboard = () => {
   const { user } = useAuth();
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [appointments, setAppointments] = useState<AppointmentWithService[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [stats, setStats] = useState({
     upcoming: 0,
@@ -68,7 +78,7 @@ const DentistDashboard = () => {
           status: appointment.status || 'pending',
           notes: appointment.notes || '',
           createdAt: appointment.created_at,
-          service: appointment.services
+          services: appointment.services
         })) : [];
         
         setAppointments(mappedAppointments);
@@ -237,7 +247,7 @@ const DentistDashboard = () => {
                           {new Date(appointment.date).toLocaleDateString('bg-BG')}, {appointment.startTime}
                         </p>
                         <p className="text-xs text-gray-500">
-                          {appointment.service?.name || 'Преглед'}
+                          {appointment.services?.name || 'Преглед'}
                         </p>
                       </div>
                       <div className="flex gap-2">

@@ -20,6 +20,12 @@ export type Database = {
           service_id: string;
           status?: string;
           notes?: string;
+          services?: {
+            name: string;
+            description?: string;
+            price: number;
+            duration: number;
+          }
         };
       };
       profiles: {
