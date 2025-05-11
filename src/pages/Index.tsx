@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
@@ -17,7 +18,7 @@ const Index = () => {
         <section className="relative bg-dental-teal text-white">
           <div className="absolute inset-0 z-0">
             <img 
-              src="https://images.unsplash.com/photo-1609840112990-4d8dee521d80?q=80&w=2970&auto=format&fit=crop" 
+              src="https://images.unsplash.com/photo-1606811851772-12ec85381a70?q=80&w=1480&auto=format&fit=crop" 
               alt="Дентален кабинет" 
               className="w-full h-full object-cover opacity-20"
             />
@@ -36,7 +37,7 @@ const Index = () => {
                 <Calendar className="h-5 w-5 mr-2" />
                 Запази час
               </Button>
-              <Button variant="outline" size="lg" className="border-white text-white hover:bg-white hover:text-dental-teal" onClick={() => navigate('/dentists')}>
+              <Button variant="outline" size="lg" className="border-white text-white hover:bg-white hover:text-dental-teal bg-transparent" onClick={() => navigate('/dentists')}>
                 Намери зъболекар
               </Button>
             </div>

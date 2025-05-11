@@ -15,7 +15,7 @@ const ServiceCard = ({ service }: ServiceCardProps) => {
   
   // Define a mapping of service images based on service names
   const serviceImages = {
-    "Профилактичен преглед": "https://images.unsplash.com/photo-1606811851772-12ec85381a70?q=80&w=1480&auto=format&fit=crop&ixlib=rb-4.0.3",
+    "Профилактичен преглед": "https://images.unsplash.com/photo-1588776814546-daab30f310ce?q=80&w=1374&auto=format&fit=crop",
     "Поставяне на имплант": "https://images.unsplash.com/photo-1629909613654-28e377c37b09?q=80&w=1469&auto=format&fit=crop&ixlib=rb-4.0.3",
     "Лечение на кариес": "https://images.unsplash.com/photo-1607613009820-a29f7bb81c04?q=80&w=1480&auto=format&fit=crop&ixlib=rb-4.0.3",
     "Професионално избелване": "https://images.unsplash.com/photo-1563778084459-859099e48677?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.0.3",
@@ -26,7 +26,7 @@ const ServiceCard = ({ service }: ServiceCardProps) => {
   };
   
   // Use the mapped image or fall back to the original imageUrl
-  const imageUrl = serviceImages[service.name] || service.imageUrl;
+  const imageUrl = serviceImages[service.name] || service.imageUrl || "https://images.unsplash.com/photo-1588776814546-daab30f310ce?q=80&w=1374&auto=format&fit=crop";
   
   return (
     <Card className="overflow-hidden transition-all hover:shadow-lg h-full flex flex-col">

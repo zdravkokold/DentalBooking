@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Appointment, AppointmentHistory, Report } from '@/data/models';
 import { toast } from 'sonner';
@@ -69,39 +68,25 @@ export const appointmentService = {
   // Create a new appointment
   createAppointment: async (appointmentData: Omit<Appointment, 'id' | 'createdAt'>): Promise<string> => {
     try {
-      // Format data to match the database schema
-      const formattedData = {
-        patient_id: appointmentData.patientId,
-        dentist_id: appointmentData.dentistId,
-        service_id: appointmentData.serviceId,
-        date: appointmentData.date,
-        time: appointmentData.startTime,
-        status: appointmentData.status,
-        notes: appointmentData.notes,
-        created_at: new Date().toISOString()
-      };
+      // Call the create_appointment RPC function with the correct parameter order
+      const { data, error } = await supabase.rpc('create_appointment', {
+        p_patient_id: appointmentData.patientId,
+        p_dentist_id: appointmentData.dentistId,
+        p_service_id: appointmentData.serviceId,
+        p_date: appointmentData.date,
+        p_time: appointmentData.startTime,
+        p_status: appointmentData.status || 'scheduled'
+      });
 
-      try {
-        const { data, error } = await supabase
-          .from('appointments')
-          .insert(formattedData)
-          .select()
-          .single();
-
-        if (error) {
-          console.error('Error creating appointment:', error);
-          toast.error('Грешка при запазване на час');
-          // Return mock ID instead of throwing error
-          return crypto.randomUUID();
-        }
-
-        toast.success('Часът е запазен успешно');
-        return data?.id || crypto.randomUUID();
-      } catch (dbError) {
-        console.error('Database error creating appointment:', dbError);
-        toast.success('Часът е запазен успешно (локално)');
+      if (error) {
+        console.error('Error creating appointment:', error);
+        toast.error('Грешка при запазване на час');
+        // Return mock ID instead of throwing error
         return crypto.randomUUID();
       }
+
+      toast.success('Часът е запазен успешно');
+      return data || crypto.randomUUID();
     } catch (error) {
       console.error('Error creating appointment:', error);
       toast.error('Грешка при запазване на час');
