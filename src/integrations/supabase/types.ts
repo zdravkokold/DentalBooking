@@ -226,6 +226,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_is_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      check_is_user_profile: {
+        Args: { profile_id: string }
+        Returns: boolean
+      }
       update_patient_extended_fields: {
         Args: {
           patient_id: string

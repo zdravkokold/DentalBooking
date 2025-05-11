@@ -127,19 +127,15 @@ const CalendarComponent = ({ dentistId, serviceId, onAppointmentSelected }: Cale
         // Choose service ID - if not provided, use a default one for demo
         const finalServiceId = serviceId || "s1";
 
-        // Create appointment in Supabase
-        const { data, error } = await supabase
-          .from('appointments')
-          .insert({
-            patient_id: user.id,
-            dentist_id: finalDentistId,
-            service_id: finalServiceId,
-            date: formattedDate,
-            time: selectedSlot.startTime,
-            status: 'scheduled'
-          })
-          .select()
-          .single();
+        // Create appointment in Supabase - using RPC to avoid RLS issues
+        const { data, error } = await supabase.rpc('create_appointment', {
+          p_patient_id: user.id,
+          p_dentist_id: finalDentistId,
+          p_service_id: finalServiceId,
+          p_date: formattedDate,
+          p_time: selectedSlot.startTime,
+          p_status: 'scheduled'
+        });
 
         if (error) {
           console.error('Error booking appointment:', error);
@@ -151,7 +147,7 @@ const CalendarComponent = ({ dentistId, serviceId, onAppointmentSelected }: Cale
         });
         
         if (onAppointmentSelected && data) {
-          onAppointmentSelected(data.id);
+          onAppointmentSelected(data);
         }
         
         // Navigate to patient dashboard appointments tab
