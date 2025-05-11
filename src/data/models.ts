@@ -32,7 +32,7 @@ export interface Service {
   imageUrl: string;
 }
 
-export type AppointmentStatus = 'scheduled' | 'completed' | 'cancelled';
+export type AppointmentStatus = 'pending' | 'confirmed' | 'scheduled' | 'completed' | 'cancelled';
 
 export interface Appointment {
   id: string;

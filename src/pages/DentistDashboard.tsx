@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Calendar, CalendarDays, Clock, CheckCircle, AlertCircle, ClipboardEdit, MessageSquare } from 'lucide-react';
 import { appointmentService } from '@/services/appointmentService';
-import { Appointment } from '@/data/models';
+import { Appointment, AppointmentStatus } from '@/data/models';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 
