@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent } from '@/components/ui/card';
@@ -11,6 +12,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
+import { appointmentService } from '@/services/appointmentService';
 
 interface TimeSlot {
   id: string;
@@ -122,10 +124,30 @@ const CalendarComponent = ({ dentistId, serviceId, onAppointmentSelected }: Cale
         }
 
         // Choose dentist ID - if not provided, use a default one for demo
-        const finalDentistId = dentistId || "d1";
+        // IMPORTANT: Make sure dentistId is a valid UUID
+        // Using a fixed valid UUID if dentistId is invalid format
+        let finalDentistId;
+        
+        // Check if dentistId is in valid UUID format using regex
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+        
+        if (dentistId && uuidRegex.test(dentistId)) {
+          finalDentistId = dentistId;
+        } else {
+          // Default UUID if dentistId is not a valid UUID
+          finalDentistId = "00000000-0000-4000-a000-000000000000";
+        }
         
         // Choose service ID - if not provided, use a default one for demo
-        const finalServiceId = serviceId || "s1";
+        // Similarly ensure serviceId is a valid UUID
+        let finalServiceId;
+        
+        if (serviceId && uuidRegex.test(serviceId)) {
+          finalServiceId = serviceId;
+        } else {
+          // Default UUID if serviceId is not a valid UUID
+          finalServiceId = "00000000-0000-4000-a000-000000000001";
+        }
 
         console.log('Booking appointment with parameters:', {
           patient_id: user.id,
@@ -135,27 +157,24 @@ const CalendarComponent = ({ dentistId, serviceId, onAppointmentSelected }: Cale
           time: selectedSlot.startTime
         });
 
-        // Create appointment in Supabase - using RPC to avoid RLS issues
-        const { data, error } = await supabase.rpc('create_appointment', {
-          p_patient_id: user.id,
-          p_dentist_id: finalDentistId,
-          p_service_id: finalServiceId,
-          p_date: formattedDate,
-          p_time: selectedSlot.startTime,
-          p_status: 'scheduled'
+        // Use appointmentService instead of direct RPC call for better abstraction
+        const appointmentId = await appointmentService.createAppointment({
+          patientId: user.id,
+          dentistId: finalDentistId,
+          serviceId: finalServiceId,
+          date: formattedDate,
+          startTime: selectedSlot.startTime,
+          endTime: selectedSlot.endTime,
+          status: 'scheduled',
+          notes: ''
         });
-
-        if (error) {
-          console.error('Error booking appointment:', error);
-          throw error;
-        }
 
         toast.success("Часът е запазен успешно!", {
           description: `Вашият час беше успешно запазен за ${format(selectedDate, 'dd MMMM yyyy', { locale: bg })} в ${selectedSlot.startTime} ч.`
         });
         
-        if (onAppointmentSelected && data) {
-          onAppointmentSelected(data);
+        if (onAppointmentSelected && appointmentId) {
+          onAppointmentSelected(appointmentId);
         }
         
         // Navigate to patient dashboard appointments tab
