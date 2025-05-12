@@ -127,6 +127,14 @@ const CalendarComponent = ({ dentistId, serviceId, onAppointmentSelected }: Cale
         // Choose service ID - if not provided, use a default one for demo
         const finalServiceId = serviceId || "s1";
 
+        console.log('Booking appointment with parameters:', {
+          patient_id: user.id,
+          dentist_id: finalDentistId,
+          service_id: finalServiceId,
+          date: formattedDate,
+          time: selectedSlot.startTime
+        });
+
         // Create appointment in Supabase - using RPC to avoid RLS issues
         const { data, error } = await supabase.rpc('create_appointment', {
           p_patient_id: user.id,

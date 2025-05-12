@@ -22,7 +22,7 @@ const ServiceCard = ({ service }: ServiceCardProps) => {
     "Ортодонтско лечение": "https://images.unsplash.com/photo-1598256989800-fe5f95da9787?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.0.3",
     "Професионално почистване": "https://images.unsplash.com/photo-1606811841689-23dfddce3e95?q=80&w=1374&auto=format&fit=crop&ixlib=rb-4.0.3",
     "Вадене на зъб": "https://images.unsplash.com/photo-1600170384310-419ccbbc4020?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.0.3",
-    "Детска дентална медицина": "https://images.unsplash.com/photo-1629909613654-28e377c37b09?q=80&w=1469&auto=format&fit=crop&ixlib=rb-4.0.3"
+    "Детска дентална медицина": "https://images.unsplash.com/photo-1606811954059-d7733ae829b6?q=80&w=1469&auto=format&fit=crop&ixlib=rb-4.0.3"
   };
   
   // Use the mapped image or fall back to the original imageUrl

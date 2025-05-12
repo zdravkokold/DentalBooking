@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { Appointment, AppointmentHistory, Report } from '@/data/models';
 import { toast } from 'sonner';
@@ -68,6 +69,8 @@ export const appointmentService = {
   // Create a new appointment
   createAppointment: async (appointmentData: Omit<Appointment, 'id' | 'createdAt'>): Promise<string> => {
     try {
+      console.log('Creating appointment with data:', appointmentData);
+      
       // Call the create_appointment RPC function with the correct parameter order
       const { data, error } = await supabase.rpc('create_appointment', {
         p_patient_id: appointmentData.patientId,

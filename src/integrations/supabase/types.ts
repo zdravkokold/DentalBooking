@@ -234,6 +234,17 @@ export type Database = {
         Args: { profile_id: string }
         Returns: boolean
       }
+      create_appointment: {
+        Args: {
+          p_patient_id: string
+          p_dentist_id: string
+          p_service_id: string
+          p_date: string
+          p_time: string
+          p_status?: string
+        }
+        Returns: string
+      }
       update_patient_extended_fields: {
         Args: {
           patient_id: string
