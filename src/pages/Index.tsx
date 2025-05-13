@@ -1,138 +1,155 @@
 
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
-import { Calendar, Phone, Clock, ChevronRight, Star, Users, ThumbsUp, CheckCircle } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
-import { dentists, services } from '@/data/mockData';
+import { Check, ChevronRight, Phone, MapPin, Star, Users, Award, Clock, Calendar } from 'lucide-react';
+import { services, dentists } from '@/data/mockData';
+import ServiceCard from '@/components/ServiceCard';
 
 const Index = () => {
-  const navigate = useNavigate();
-  
+  const featuredServices = services.slice(0, 3); // Get first 3 services
+  const featuredDentists = dentists.slice(0, 3); // Get first 3 dentists
+
+  // Testimonials data with profile images
+  const testimonials = [
+    {
+      id: 1,
+      name: "Мария Петрова",
+      role: "Пациент",
+      content: "Невероятно обслужване! Процедурата беше безболезнена и резултатът е впечатляващ. Ще препоръчам на всички мои приятели.",
+      rating: 5,
+      image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=200&h=200&auto=format&fit=crop"
+    },
+    {
+      id: 2,
+      name: "Георги Иванов",
+      role: "Пациент",
+      content: "Много професионален екип, приятна атмосфера и модерна техника. Определено най-доброто място за зъболечение в града!",
+      rating: 5,
+      image: "https://images.unsplash.com/photo-1568602471122-7832951cc4c5?q=80&w=200&h=200&auto=format&fit=crop"
+    },
+    {
+      id: 3,
+      name: "Лилия Димитрова",
+      role: "Пациент",
+      content: "Страхотна клиника с внимателни и грижовни зъболекари. Процесът на запазване на час е изключително удобен!",
+      rating: 4,
+      image: "https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=200&h=200&auto=format&fit=crop"
+    }
+  ];
+
+  // Statistics for the stats section
+  const statistics = [
+    { icon: <Users className="h-8 w-8 text-dental-teal" />, value: "5000+", label: "Доволни пациенти" },
+    { icon: <Award className="h-8 w-8 text-dental-teal" />, value: "10+", label: "Години опит" },
+    { icon: <Calendar className="h-8 w-8 text-dental-teal" />, value: "20,000+", label: "Процедури" },
+    { icon: <Star className="h-8 w-8 text-dental-teal" />, value: "4.9", label: "Среден рейтинг" }
+  ];
+
   return (
     <div className="flex flex-col min-h-screen">
       <Navbar />
       
       <main className="flex-grow">
-        {/* Hero Section with updated dentist working image */}
-        <section className="relative bg-dental-teal text-white">
-          <div className="absolute inset-0 z-0">
-            <img 
-              src="https://images.unsplash.com/photo-1606811851772-12ec85381a70?q=80&w=1480&auto=format&fit=crop" 
-              alt="Дентален кабинет" 
-              className="w-full h-full object-cover opacity-20"
-            />
-            <div className="absolute inset-0 bg-gradient-to-r from-dental-teal/90 to-dental-teal/60"></div>
-          </div>
-          
-          <div className="relative z-10 py-24 px-6 md:px-12 lg:px-24">
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6">
-              Грижа за вашите зъби с усмивка
-            </h1>
-            <p className="text-lg md:text-xl mb-8">
-              Намерете най-добрите зъболекари и запазете час бързо и лесно.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4">
-              <Button size="lg" className="bg-white text-dental-teal hover:bg-gray-100" onClick={() => navigate('/appointments')}>
-                <Calendar className="h-5 w-5 mr-2" />
-                Запази час
-              </Button>
-              <Button variant="outline" size="lg" className="border-white text-white hover:bg-white hover:text-dental-teal bg-transparent" onClick={() => navigate('/dentists')}>
-                Намери зъболекар
-              </Button>
+        {/* Hero Section */}
+        <section className="bg-dental-lightGray">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+              <div>
+                <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+                  Професионални <span className="text-dental-teal">дентални услуги</span> за цялото семейство
+                </h1>
+                <p className="text-lg text-gray-600 mb-8">
+                  Запазете час при нашите опитни зъболекари за по-здрави зъби и красива усмивка. Използваме модерна техника и предлагаме комфортно изживяване.
+                </p>
+                <div className="flex flex-wrap gap-4">
+                  <Button className="bg-dental-teal hover:bg-dental-teal/90 px-6 py-6 text-lg" asChild>
+                    <Link to="/appointments">Запази час <ChevronRight className="ml-1 h-4 w-4" /></Link>
+                  </Button>
+                  <Button variant="outline" size="lg" className="px-6 py-6 text-lg" asChild>
+                    <Link to="/services">Нашите услуги</Link>
+                  </Button>
+                </div>
+              </div>
+              <div className="hidden md:block">
+                <img 
+                  src="https://img.freepik.com/free-photo/young-female-doctor-dentist-with-tool_496169-109.jpg" 
+                  alt="Дентални услуги" 
+                  className="rounded-lg shadow-xl w-full h-auto" 
+                />
+              </div>
             </div>
           </div>
         </section>
         
         {/* Features Section */}
         <section className="py-16 bg-white">
-          <div className="max-w-6xl mx-auto px-6 md:px-12 lg:px-24">
-            <h2 className="text-3xl font-bold text-gray-800 mb-8 text-center">
-              Защо да изберете нас?
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {/* Feature 1 */}
-              <div className="text-center">
-                <Clock className="h-10 w-10 text-dental-teal mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">
-                  Бързо и лесно запазване на час
-                </h3>
-                <p className="text-gray-600">
-                  Интуитивен процес за намиране на свободни часове и запазване на час онлайн.
-                </p>
-              </div>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl font-bold text-gray-900">Защо да изберете нас</h2>
+              <p className="mt-4 text-lg text-gray-600">Предоставяме висококачествено обслужване и най-добрите грижи за вашите зъби</p>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <Card className="bg-dental-lightGray border-none shadow-sm">
+                <CardContent className="pt-6">
+                  <div className="flex flex-col items-center text-center">
+                    <div className="rounded-full bg-dental-teal p-3 mb-4">
+                      <Award className="h-6 w-6 text-white" />
+                    </div>
+                    <h3 className="text-xl font-bold mb-2">Висококвалифицирани специалисти</h3>
+                    <p className="text-gray-600">Нашият екип от зъболекари има богат опит и постоянно се обучава с най-новите техники</p>
+                  </div>
+                </CardContent>
+              </Card>
               
-              {/* Feature 2 */}
-              <div className="text-center">
-                <Phone className="h-10 w-10 text-dental-teal mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">
-                  Поддръжка на клиенти 24/7
-                </h3>
-                <p className="text-gray-600">
-                  Нашият екип е на разположение да отговори на вашите въпроси по всяко време.
-                </p>
-              </div>
+              <Card className="bg-dental-lightGray border-none shadow-sm">
+                <CardContent className="pt-6">
+                  <div className="flex flex-col items-center text-center">
+                    <div className="rounded-full bg-dental-teal p-3 mb-4">
+                      <Clock className="h-6 w-6 text-white" />
+                    </div>
+                    <h3 className="text-xl font-bold mb-2">Удобно работно време</h3>
+                    <p className="text-gray-600">Предлагаме гъвкаво работно време, включително вечерни часове и съботни дни</p>
+                  </div>
+                </CardContent>
+              </Card>
               
-              {/* Feature 3 */}
-              <div className="text-center">
-                <Calendar className="h-10 w-10 text-dental-teal mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">
-                  Напомняния за предстоящи часове
-                </h3>
-                <p className="text-gray-600">
-                  Получавайте навременни напомняния, за да не пропуснете важните си прегледи.
-                </p>
-              </div>
+              <Card className="bg-dental-lightGray border-none shadow-sm">
+                <CardContent className="pt-6">
+                  <div className="flex flex-col items-center text-center">
+                    <div className="rounded-full bg-dental-teal p-3 mb-4">
+                      <Calendar className="h-6 w-6 text-white" />
+                    </div>
+                    <h3 className="text-xl font-bold mb-2">Лесно запазване на час</h3>
+                    <p className="text-gray-600">Бързо и лесно запазване на час онлайн в удобно за вас време</p>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           </div>
         </section>
         
         {/* Services Section */}
         <section className="py-16 bg-dental-lightGray">
-          <div className="max-w-6xl mx-auto px-6 md:px-12 lg:px-24">
-            <h2 className="text-3xl font-bold text-gray-800 mb-2 text-center">
-              Нашите Услуги
-            </h2>
-            <p className="text-center text-gray-600 mb-8">
-              Предлагаме пълен спектър от дентални услуги за цялото семейство
-            </p>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl font-bold text-gray-900">Нашите услуги</h2>
+              <p className="mt-4 text-lg text-gray-600">Предлагаме широк спектър от дентални процедури за всички възрасти</p>
+            </div>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {services.slice(0, 6).map((service) => (
-                <Card key={service.id} className="overflow-hidden transition-all hover:shadow-md">
-                  <div className="aspect-[3/2] overflow-hidden">
-                    <img 
-                      src={service.imageUrl || "https://images.unsplash.com/photo-1588776814546-daab30f310ce?q=80&w=1374&auto=format&fit=crop"} 
-                      alt={service.name}
-                      className="w-full h-full object-cover" 
-                    />
-                  </div>
-                  <CardContent className="p-4">
-                    <h3 className="font-semibold text-lg mb-2">{service.name}</h3>
-                    <div className="flex items-center text-sm text-gray-600 mb-2">
-                      <Clock className="h-4 w-4 mr-1" />
-                      <span>{service.duration} мин.</span>
-                    </div>
-                    <Button 
-                      variant="link" 
-                      className="px-0 text-dental-teal"
-                      onClick={() => navigate('/services')}
-                    >
-                      Научете повече
-                    </Button>
-                  </CardContent>
-                </Card>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {featuredServices.map(service => (
+                <ServiceCard key={service.id} service={service} />
               ))}
             </div>
             
-            <div className="text-center mt-8">
-              <Button 
-                onClick={() => navigate('/services')}
-                className="bg-dental-teal hover:bg-dental-teal/90"
-              >
-                Вижте всички услуги
+            <div className="mt-12 text-center">
+              <Button variant="outline" size="lg" asChild>
+                <Link to="/services">Вижте всички услуги <ChevronRight className="ml-1 h-4 w-4" /></Link>
               </Button>
             </div>
           </div>
@@ -140,54 +157,39 @@ const Index = () => {
         
         {/* Dentists Section */}
         <section className="py-16 bg-white">
-          <div className="max-w-6xl mx-auto px-6 md:px-12 lg:px-24">
-            <h2 className="text-3xl font-bold text-gray-800 mb-2 text-center">
-              Нашите Зъболекари
-            </h2>
-            <p className="text-center text-gray-600 mb-8">
-              Запознайте се с нашия екип от висококвалифицирани дентални специалисти
-            </p>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl font-bold text-gray-900">Нашите зъболекари</h2>
+              <p className="mt-4 text-lg text-gray-600">Запознайте се с нашите висококвалифицирани специалисти</p>
+            </div>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-              {dentists.slice(0, 3).map((dentist) => (
-                <Card key={dentist.id} className="overflow-hidden transition-transform hover:scale-105">
-                  <div className="aspect-square overflow-hidden">
-                    <img 
-                      src={dentist.imageUrl} 
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {featuredDentists.map((dentist) => (
+                <Card key={dentist.id} className="overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                  <div className="aspect-[3/4] w-full">
+                    <img
+                      src={dentist.imageUrl || "https://img.freepik.com/free-photo/doctor-with-his-arms-crossed-white-background_1368-5790.jpg"}
                       alt={dentist.name}
-                      className="w-full h-full object-cover" 
+                      className="w-full h-full object-cover object-center"
                     />
                   </div>
-                  <CardContent className="p-5 text-center">
-                    <h3 className="font-bold text-xl mb-1">{dentist.name}</h3>
-                    <p className="text-dental-teal mb-3">{dentist.specialization}</p>
-                    <div className="flex items-center justify-center text-amber-400 mb-4">
-                      <Star className="h-4 w-4 fill-current" />
-                      <Star className="h-4 w-4 fill-current" />
-                      <Star className="h-4 w-4 fill-current" />
-                      <Star className="h-4 w-4 fill-current" />
-                      <Star className="h-4 w-4 fill-current" />
-                      <span className="ml-1 text-gray-700">({dentist.rating})</span>
+                  <CardContent className="p-4">
+                    <h3 className="text-xl font-bold">{dentist.name}</h3>
+                    <p className="text-dental-teal mb-2">{dentist.specialization}</p>
+                    <div className="flex items-center text-sm text-gray-500">
+                      <Star className="h-4 w-4 text-yellow-500 mr-1" fill="currentColor" />
+                      <span>{dentist.rating}</span>
+                      <span className="mx-1">•</span>
+                      <span>{dentist.yearsOfExperience} години опит</span>
                     </div>
-                    <Button 
-                      onClick={() => navigate(`/dentists/${dentist.id}`)}
-                      variant="outline"
-                      className="border-dental-teal text-dental-teal hover:bg-dental-teal hover:text-white"
-                    >
-                      Виж профила
-                    </Button>
                   </CardContent>
                 </Card>
               ))}
             </div>
             
-            <div className="text-center mt-8">
-              <Button 
-                onClick={() => navigate('/dentists')}
-                variant="outline"
-                className="border-dental-teal text-dental-teal hover:bg-dental-teal hover:text-white"
-              >
-                Вижте всички зъболекари
+            <div className="mt-12 text-center">
+              <Button variant="outline" size="lg" asChild>
+                <Link to="/dentists">Запознайте се с всички зъболекари <ChevronRight className="ml-1 h-4 w-4" /></Link>
               </Button>
             </div>
           </div>
@@ -195,170 +197,130 @@ const Index = () => {
         
         {/* Testimonials Section */}
         <section className="py-16 bg-dental-lightGray">
-          <div className="max-w-6xl mx-auto px-6 md:px-12 lg:px-24">
-            <h2 className="text-3xl font-bold text-gray-800 mb-2 text-center">
-              Какво казват нашите пациенти
-            </h2>
-            <p className="text-center text-gray-600 mb-8">
-              Мнения от хора, които са се доверили на нашите услуги
-            </p>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl font-bold text-gray-900">Какво казват нашите пациенти</h2>
+              <p className="mt-4 text-lg text-gray-600">Вижте отзивите на нашите доволни пациенти</p>
+            </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <Card className="bg-white">
-                <CardContent className="p-6">
-                  <div className="flex text-amber-400 mb-4">
-                    <Star className="h-5 w-5 fill-current" />
-                    <Star className="h-5 w-5 fill-current" />
-                    <Star className="h-5 w-5 fill-current" />
-                    <Star className="h-5 w-5 fill-current" />
-                    <Star className="h-5 w-5 fill-current" />
-                  </div>
-                  <p className="italic text-gray-700 mb-4">
-                    "Най-добрите зъболекари, на които съм попадал. Изключително професионално отношение и безболезнено лечение."
-                  </p>
-                  <div className="flex items-center">
-                    <div className="w-10 h-10 rounded-full bg-gray-300 mr-3"></div>
-                    <div>
-                      <p className="font-medium">Иван Петров</p>
-                      <p className="text-sm text-gray-500">Пациент от 2 години</p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {testimonials.map((testimonial) => (
+                <Card key={testimonial.id} className="shadow-sm">
+                  <CardContent className="p-6">
+                    <div className="flex items-center mb-4">
+                      {[...Array(5)].map((_, i) => (
+                        <Star 
+                          key={i} 
+                          className={`h-5 w-5 ${i < testimonial.rating ? 'text-yellow-500 fill-yellow-500' : 'text-gray-300'}`} 
+                        />
+                      ))}
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card className="bg-white">
-                <CardContent className="p-6">
-                  <div className="flex text-amber-400 mb-4">
-                    <Star className="h-5 w-5 fill-current" />
-                    <Star className="h-5 w-5 fill-current" />
-                    <Star className="h-5 w-5 fill-current" />
-                    <Star className="h-5 w-5 fill-current" />
-                    <Star className="h-5 w-5 fill-current" />
-                  </div>
-                  <p className="italic text-gray-700 mb-4">
-                    "Удобното онлайн записване за час спестява много време. Персоналът е изключително внимателен и услужлив."
-                  </p>
-                  <div className="flex items-center">
-                    <div className="w-10 h-10 rounded-full bg-gray-300 mr-3"></div>
-                    <div>
-                      <p className="font-medium">Мария Иванова</p>
-                      <p className="text-sm text-gray-500">Пациент от 1 година</p>
+                    <p className="text-gray-700 mb-6">"{testimonial.content}"</p>
+                    <div className="flex items-center">
+                      <div className="h-12 w-12 rounded-full overflow-hidden mr-4">
+                        <img 
+                          src={testimonial.image} 
+                          alt={testimonial.name} 
+                          className="h-full w-full object-cover"
+                        />
+                      </div>
+                      <div>
+                        <h4 className="font-bold">{testimonial.name}</h4>
+                        <p className="text-sm text-gray-500">{testimonial.role}</p>
+                      </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card className="bg-white">
-                <CardContent className="p-6">
-                  <div className="flex text-amber-400 mb-4">
-                    <Star className="h-5 w-5 fill-current" />
-                    <Star className="h-5 w-5 fill-current" />
-                    <Star className="h-5 w-5 fill-current" />
-                    <Star className="h-5 w-5 fill-current" />
-                    <Star className="h-5 w-5 fill-current" />
-                  </div>
-                  <p className="italic text-gray-700 mb-4">
-                    "Детето ми обожава да ходи на зъболекар тук! Страхът от зъболекарския стол вече е в миналото."
-                  </p>
-                  <div className="flex items-center">
-                    <div className="w-10 h-10 rounded-full bg-gray-300 mr-3"></div>
-                    <div>
-                      <p className="font-medium">Петър Стоянов</p>
-                      <p className="text-sm text-gray-500">Пациент от 3 години</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
           </div>
         </section>
         
         {/* Statistics Section */}
         <section className="py-16 bg-dental-teal text-white">
-          <div className="max-w-6xl mx-auto px-6 md:px-12 lg:px-24">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-              <div>
-                <div className="text-4xl font-bold mb-2">5000+</div>
-                <p>Доволни пациенти</p>
-              </div>
-              <div>
-                <div className="text-4xl font-bold mb-2">12+</div>
-                <p>Години опит</p>
-              </div>
-              <div>
-                <div className="text-4xl font-bold mb-2">15+</div>
-                <p>Квалифицирани специалисти</p>
-              </div>
-              <div>
-                <div className="text-4xl font-bold mb-2">20+</div>
-                <p>Дентални услуги</p>
-              </div>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+              {statistics.map((stat, index) => (
+                <div key={index} className="flex flex-col items-center">
+                  <div className="mb-3 bg-white/10 p-3 rounded-full">
+                    {stat.icon}
+                  </div>
+                  <p className="text-3xl lg:text-4xl font-bold mb-2">{stat.value}</p>
+                  <p className="text-lg text-dental-mint">{stat.label}</p>
+                </div>
+              ))}
             </div>
           </div>
         </section>
         
-        {/* How It Works Section */}
+        {/* CTA Section */}
         <section className="py-16 bg-white">
-          <div className="max-w-6xl mx-auto px-6 md:px-12 lg:px-24">
-            <h2 className="text-3xl font-bold text-gray-800 mb-8 text-center">
-              Как работи?
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {/* Step 1 */}
-              <div className="text-center">
-                <div className="w-16 h-16 bg-dental-teal text-white rounded-full flex items-center justify-center mx-auto mb-4">
-                  1
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="bg-dental-lightGray rounded-lg shadow-sm p-8 md:p-12">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                <div>
+                  <h2 className="text-3xl font-bold text-gray-900 mb-4">Готови ли сте за здрави зъби?</h2>
+                  <p className="text-lg text-gray-600 mb-6">
+                    Запазете час при нашите опитни зъболекари и се погрижете за вашето дентално здраве още днес.
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    <Button className="bg-dental-teal hover:bg-dental-teal/90" size="lg" asChild>
+                      <Link to="/appointments">Запази час</Link>
+                    </Button>
+                    <Button variant="outline" size="lg" className="flex items-center justify-center gap-2">
+                      <Phone className="h-5 w-5" />
+                      <span>+359 2 456 7890</span>
+                    </Button>
+                  </div>
                 </div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">
-                  Намерете зъболекар
-                </h3>
-                <p className="text-gray-600">
-                  Разгледайте нашия списък със зъболекари и изберете този, който най-добре отговаря на вашите нужди.
-                </p>
-              </div>
-              
-              {/* Step 2 */}
-              <div className="text-center">
-                <div className="w-16 h-16 bg-dental-teal text-white rounded-full flex items-center justify-center mx-auto mb-4">
-                  2
+                <div className="hidden md:block">
+                  <img 
+                    src="https://img.freepik.com/free-photo/beautiful-young-female-doctor-looking-camera-office_1301-7807.jpg" 
+                    alt="Дентален екип" 
+                    className="rounded-lg shadow-lg w-full h-auto" 
+                  />
                 </div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">
-                  Изберете услуга и час
-                </h3>
-                <p className="text-gray-600">
-                  Изберете желаната от вас услуга и прегледайте наличните часове.
-                </p>
-              </div>
-              
-              {/* Step 3 */}
-              <div className="text-center">
-                <div className="w-16 h-16 bg-dental-teal text-white rounded-full flex items-center justify-center mx-auto mb-4">
-                  3
-                </div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">
-                  Запазете час
-                </h3>
-                <p className="text-gray-600">
-                  Потвърдете вашия час и получете напомняне преди посещението.
-                </p>
               </div>
             </div>
           </div>
         </section>
         
-        {/* Call to Action Section */}
-        <section className="py-24 bg-dental-teal text-white">
-          <div className="max-w-4xl mx-auto px-6 md:px-12 lg:px-24 text-center">
-            <h2 className="text-3xl md:text-4xl font-bold mb-8">
-              Готови ли сте да се погрижите за вашата усмивка?
-            </h2>
-            <p className="text-lg mb-8">
-              Запазете час при най-добрите зъболекари в града още днес!
-            </p>
-            <Button size="lg" className="bg-white text-dental-teal hover:bg-gray-100" onClick={() => navigate('/appointments')}>
-              Запази час сега
-              <ChevronRight className="h-5 w-5 ml-2" />
-            </Button>
+        {/* Contact Info Section */}
+        <section className="py-16 bg-dental-lightGray">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <Card className="shadow-sm">
+                <CardContent className="p-6 flex flex-col items-center text-center">
+                  <div className="rounded-full bg-dental-teal p-4 mb-4">
+                    <MapPin className="h-6 w-6 text-white" />
+                  </div>
+                  <h3 className="text-xl font-bold mb-2">Адрес</h3>
+                  <p className="text-gray-600">ул. Витоша 89, София 1000, България</p>
+                </CardContent>
+              </Card>
+              
+              <Card className="shadow-sm">
+                <CardContent className="p-6 flex flex-col items-center text-center">
+                  <div className="rounded-full bg-dental-teal p-4 mb-4">
+                    <Phone className="h-6 w-6 text-white" />
+                  </div>
+                  <h3 className="text-xl font-bold mb-2">Телефон</h3>
+                  <p className="text-gray-600">+359 2 456 7890</p>
+                  <p className="text-gray-600">+359 888 123 456</p>
+                </CardContent>
+              </Card>
+              
+              <Card className="shadow-sm">
+                <CardContent className="p-6 flex flex-col items-center text-center">
+                  <div className="rounded-full bg-dental-teal p-4 mb-4">
+                    <Clock className="h-6 w-6 text-white" />
+                  </div>
+                  <h3 className="text-xl font-bold mb-2">Работно време</h3>
+                  <p className="text-gray-600">Понеделник - Петък: 9:00 - 19:00</p>
+                  <p className="text-gray-600">Събота: 9:00 - 14:00</p>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </section>
       </main>

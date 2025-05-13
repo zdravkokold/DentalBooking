@@ -71,11 +71,26 @@ export const appointmentService = {
     try {
       console.log('Creating appointment with data:', appointmentData);
       
+      // Validate UUIDs before sending to the database
+      const validPatientId = validateUUID(appointmentData.patientId);
+      const validDentistId = validateUUID(appointmentData.dentistId);
+      const validServiceId = validateUUID(appointmentData.serviceId);
+      
+      if (!validPatientId || !validDentistId || !validServiceId) {
+        console.error('Invalid UUID format in appointment data:', { 
+          patientId: appointmentData.patientId,
+          dentistId: appointmentData.dentistId,
+          serviceId: appointmentData.serviceId
+        });
+        toast.error('Грешка при запазване на час: невалидни данни');
+        return crypto.randomUUID();
+      }
+      
       // Call the create_appointment RPC function with the correct parameter order
       const { data, error } = await supabase.rpc('create_appointment', {
-        p_patient_id: appointmentData.patientId,
-        p_dentist_id: appointmentData.dentistId,
-        p_service_id: appointmentData.serviceId,
+        p_patient_id: validPatientId,
+        p_dentist_id: validDentistId,
+        p_service_id: validServiceId,
         p_date: appointmentData.date,
         p_time: appointmentData.startTime,
         p_status: appointmentData.status || 'scheduled'
@@ -207,6 +222,27 @@ export const appointmentService = {
     }
   }
 };
+
+// Helper function to validate UUID format
+function validateUUID(id: string): string | null {
+  // UUID regex pattern
+  const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  
+  // Check if the ID is a valid UUID
+  if (id && uuidPattern.test(id)) {
+    return id;
+  }
+  
+  // For development environment, use default UUID for specific known short IDs
+  if (id === 'd1') {
+    return "00000000-0000-4000-a000-000000000000";
+  } else if (id === 's1' || id === 's2' || id === 's3') {
+    return "00000000-0000-4000-a000-000000000001";
+  }
+  
+  console.error('Invalid UUID format:', id);
+  return null;
+}
 
 // Helper function to calculate end time based on start time and duration
 const calculateEndTime = (startTime: string, durationMinutes: number): string => {

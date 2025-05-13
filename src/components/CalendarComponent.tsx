@@ -10,7 +10,6 @@ import { ChevronRight, Check, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuth } from '@/context/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { appointmentService } from '@/services/appointmentService';
 
@@ -104,6 +103,31 @@ const CalendarComponent = ({ dentistId, serviceId, onAppointmentSelected }: Cale
     setSelectedSlot(slot);
   };
 
+  // Helper function to validate UUID format
+  const validateUUID = (id?: string): string => {
+    if (!id) return "00000000-0000-4000-a000-000000000000";
+    
+    // UUID regex pattern
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    
+    // Check if it's already a valid UUID
+    if (uuidRegex.test(id)) {
+      return id;
+    }
+    
+    // Map short IDs to valid UUIDs
+    if (id === 'd1' || id === 'd2' || id === 'd3') {
+      return "00000000-0000-4000-a000-000000000000";
+    }
+    
+    if (id === 's1' || id === 's2' || id === 's3') {
+      return "00000000-0000-4000-a000-000000000001";
+    }
+    
+    // Default fallback UUID
+    return "00000000-0000-4000-a000-000000000000";
+  };
+
   const handleBookAppointment = async () => {
     if (!user) {
       toast.error("Моля, влезте в акаунта си за да запазите час", {
@@ -123,31 +147,9 @@ const CalendarComponent = ({ dentistId, serviceId, onAppointmentSelected }: Cale
           throw new Error('No slot selected');
         }
 
-        // Choose dentist ID - if not provided, use a default one for demo
-        // IMPORTANT: Make sure dentistId is a valid UUID
-        // Using a fixed valid UUID if dentistId is invalid format
-        let finalDentistId;
-        
-        // Check if dentistId is in valid UUID format using regex
-        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-        
-        if (dentistId && uuidRegex.test(dentistId)) {
-          finalDentistId = dentistId;
-        } else {
-          // Default UUID if dentistId is not a valid UUID
-          finalDentistId = "00000000-0000-4000-a000-000000000000";
-        }
-        
-        // Choose service ID - if not provided, use a default one for demo
-        // Similarly ensure serviceId is a valid UUID
-        let finalServiceId;
-        
-        if (serviceId && uuidRegex.test(serviceId)) {
-          finalServiceId = serviceId;
-        } else {
-          // Default UUID if serviceId is not a valid UUID
-          finalServiceId = "00000000-0000-4000-a000-000000000001";
-        }
+        // Properly validate and convert IDs to valid UUIDs
+        const finalDentistId = validateUUID(dentistId);
+        const finalServiceId = validateUUID(serviceId);
 
         console.log('Booking appointment with parameters:', {
           patient_id: user.id,
