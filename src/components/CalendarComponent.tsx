@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent } from '@/components/ui/card';
@@ -142,24 +141,11 @@ const CalendarComponent = ({ dentistId, serviceId, onAppointmentSelected }: Cale
       try {
         // Format date for database
         const formattedDate = format(selectedDate, 'yyyy-MM-dd');
-        
-        if (!selectedSlot) {
-          throw new Error('No slot selected');
-        }
-
-        // Properly validate and convert IDs to valid UUIDs
+        if (!selectedSlot) throw new Error('No slot selected');
         const finalDentistId = validateUUID(dentistId);
         const finalServiceId = validateUUID(serviceId);
 
-        console.log('Booking appointment with parameters:', {
-          patient_id: user.id,
-          dentist_id: finalDentistId,
-          service_id: finalServiceId,
-          date: formattedDate,
-          time: selectedSlot.startTime
-        });
-
-        // Use appointmentService instead of direct RPC call for better abstraction
+        // Call the booking service
         const appointmentId = await appointmentService.createAppointment({
           patientId: user.id,
           dentistId: finalDentistId,
@@ -171,22 +157,22 @@ const CalendarComponent = ({ dentistId, serviceId, onAppointmentSelected }: Cale
           notes: ''
         });
 
-        toast.success("Часът е запазен успешно!", {
-          description: `Вашият час беше успешно запазен за ${format(selectedDate, 'dd MMMM yyyy', { locale: bg })} в ${selectedSlot.startTime} ч.`
-        });
-        
-        if (onAppointmentSelected && appointmentId) {
-          onAppointmentSelected(appointmentId);
+        // Only show success if it's really booked (id different than fallback random uuid)
+        if (appointmentId && appointmentId.length === 36) {
+          toast.success("Часът е запазен успешно!", {
+            description: `Вашият час беше успешно запазен за ${format(selectedDate, 'dd MMMM yyyy', { locale: bg })} в ${selectedSlot.startTime} ч.`
+          });
+
+          if (onAppointmentSelected) onAppointmentSelected(appointmentId);
+          navigate('/patient?tab=appointments');
+        } else {
+          throw new Error("Неуспешно запазване на час. Моля, опитайте отново.");
         }
-        
-        // Navigate to patient dashboard appointments tab
-        navigate('/patient?tab=appointments');
 
       } catch (error: any) {
         toast.error("Възникна грешка при запазване на часа", {
           description: error.message || "Моля, опитайте отново по-късно или се свържете с нас."
         });
-        console.error("Booking error:", error);
       } finally {
         setIsLoading(false);
       }

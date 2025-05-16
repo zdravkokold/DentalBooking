@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
@@ -76,7 +75,7 @@ const Index = () => {
               </div>
               <div className="hidden md:block">
                 <img 
-                  src="https://img.freepik.com/free-photo/young-female-doctor-dentist-with-tool_496169-109.jpg" 
+                  src="https://www.turkeydentalclinic.com/wp-content/uploads/2024/11/dentist-turkey-antalya.jpg"
                   alt="Дентални услуги" 
                   className="rounded-lg shadow-xl w-full h-auto" 
                 />
