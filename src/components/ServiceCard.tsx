@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -18,6 +17,7 @@ const ServiceCard = ({ service }: ServiceCardProps) => {
     "Профилактичен преглед": "https://images.unsplash.com/photo-1588776814546-daab30f310ce?q=80&w=1374&auto=format&fit=crop",
     "Поставяне на имплант": "https://images.unsplash.com/photo-1629909613654-28e377c37b09?q=80&w=1469&auto=format&fit=crop&ixlib=rb-4.0.3",
     "Лечение на кариес": "https://images.unsplash.com/photo-1607613009820-a29f7bb81c04?q=80&w=1480&auto=format&fit=crop&ixlib=rb-4.0.3",
+    // ПРОМЯНА единствено за избелване според вашата заявка
     "Професионално избелване": "https://s16736.pcdn.co/wp-content/uploads/sites/418/2017/02/Teeth-Whitening.jpg.optimal.jpg",
     "Ортодонтско лечение": "https://images.unsplash.com/photo-1598256989800-fe5f95da9787?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.0.3",
     "Професионално почистване": "https://images.unsplash.com/photo-1606811841689-23dfddce3e95?q=80&w=1374&auto=format&fit=crop&ixlib=rb-4.0.3",

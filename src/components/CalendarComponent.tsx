@@ -30,6 +30,7 @@ const CalendarComponent = ({ dentistId, serviceId, onAppointmentSelected }: Cale
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
   const navigate = useNavigate();
   
@@ -102,32 +103,19 @@ const CalendarComponent = ({ dentistId, serviceId, onAppointmentSelected }: Cale
     setSelectedSlot(slot);
   };
 
-  // Helper function to validate UUID format
+  // Helper function to validate UUID format (обновена: приема и d1-d3, s1-s8)
   const validateUUID = (id?: string): string => {
     if (!id) return "00000000-0000-4000-a000-000000000000";
-    
-    // UUID regex pattern
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    
-    // Check if it's already a valid UUID
-    if (uuidRegex.test(id)) {
-      return id;
-    }
-    
-    // Map short IDs to valid UUIDs
-    if (id === 'd1' || id === 'd2' || id === 'd3') {
-      return "00000000-0000-4000-a000-000000000000";
-    }
-    
-    if (id === 's1' || id === 's2' || id === 's3') {
-      return "00000000-0000-4000-a000-000000000001";
-    }
-    
-    // Default fallback UUID
+    if (uuidRegex.test(id)) return id;
+    // DEV SHORTHAND MAP for demo/mock/test users
+    if (id === 'd1' || id === 'd2' || id === 'd3') return "00000000-0000-4000-a000-000000000000";
+    if (id.startsWith('s')) return "00000000-0000-4000-a000-000000000001";
     return "00000000-0000-4000-a000-000000000000";
   };
 
   const handleBookAppointment = async () => {
+    setError(null);
     if (!user) {
       toast.error("Моля, влезте в акаунта си за да запазите час", {
         description: "Пренасочване към страницата за вход..."
@@ -136,46 +124,46 @@ const CalendarComponent = ({ dentistId, serviceId, onAppointmentSelected }: Cale
       return;
     }
 
-    if (selectedSlotId && selectedDate) {
-      setIsLoading(true);
-      try {
-        // Format date for database
-        const formattedDate = format(selectedDate, 'yyyy-MM-dd');
-        if (!selectedSlot) throw new Error('No slot selected');
-        const finalDentistId = validateUUID(dentistId);
-        const finalServiceId = validateUUID(serviceId);
+    if (!selectedSlotId || !selectedDate || !selectedSlot) {
+      setError("Моля, изберете дата и час.");
+      toast.error("Моля, изберете дата и час.");
+      return;
+    }
 
-        // Call the booking service
-        const appointmentId = await appointmentService.createAppointment({
-          patientId: user.id,
-          dentistId: finalDentistId,
-          serviceId: finalServiceId,
-          date: formattedDate,
-          startTime: selectedSlot.startTime,
-          endTime: selectedSlot.endTime,
-          status: 'scheduled',
-          notes: ''
+    setIsLoading(true);
+
+    try {
+      const formattedDate = format(selectedDate, 'yyyy-MM-dd');
+      const finalDentistId = validateUUID(dentistId);
+      const finalServiceId = validateUUID(serviceId);
+      const appointmentId = await appointmentService.createAppointment({
+        patientId: user.id,
+        dentistId: finalDentistId,
+        serviceId: finalServiceId,
+        date: formattedDate,
+        startTime: selectedSlot.startTime,
+        endTime: selectedSlot.endTime,
+        status: 'scheduled',
+        notes: ''
+      });
+
+      // booking OK only if appointmentId is valid uuid (36 chars, not fallback)
+      if (appointmentId && String(appointmentId).length === 36) {
+        toast.success("Часът е запазен успешно!", {
+          description: `Вашият час беше успешно запазен за ${format(selectedDate, 'dd MMMM yyyy', { locale: bg })} в ${selectedSlot.startTime} ч.`
         });
-
-        // Only show success if it's really booked (id different than fallback random uuid)
-        if (appointmentId && appointmentId.length === 36) {
-          toast.success("Часът е запазен успешно!", {
-            description: `Вашият час беше успешно запазен за ${format(selectedDate, 'dd MMMM yyyy', { locale: bg })} в ${selectedSlot.startTime} ч.`
-          });
-
-          if (onAppointmentSelected) onAppointmentSelected(appointmentId);
-          navigate('/patient?tab=appointments');
-        } else {
-          throw new Error("Неуспешно запазване на час. Моля, опитайте отново.");
-        }
-
-      } catch (error: any) {
-        toast.error("Възникна грешка при запазване на часа", {
-          description: error.message || "Моля, опитайте отново по-късно или се свържете с нас."
-        });
-      } finally {
-        setIsLoading(false);
+        if (onAppointmentSelected) onAppointmentSelected(appointmentId);
+        setTimeout(() => navigate('/patient?tab=appointments'), 1000);
+      } else {
+        throw new Error("Неуспешно запазване на час. Моля, опитайте отново.");
       }
+    } catch (error: any) {
+      setError(error.message || "Възникна грешка при запазване на часа.");
+      toast.error("Грешка при запазване на час.", {
+        description: error.message || "Моля, опитайте отново по-късно или се свържете с нас."
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -226,7 +214,6 @@ const CalendarComponent = ({ dentistId, serviceId, onAppointmentSelected }: Cale
                 available: { fontWeight: 'bold', color: '#008080' }
               }}
               disabled={(date) => {
-                // Disable dates in the past, weekends, or dates without available slots
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
                 return (
@@ -295,10 +282,14 @@ const CalendarComponent = ({ dentistId, serviceId, onAppointmentSelected }: Cale
                 className="bg-dental-teal hover:bg-dental-teal/90"
                 onClick={handleBookAppointment}
                 disabled={isLoading}
+                data-testid="book-appointment-button"
               >
                 {isLoading ? 'Обработване...' : 'Запази час'} {!isLoading && <ChevronRight className="ml-1 h-4 w-4" />}
               </Button>
             </div>
+          )}
+          {error && (
+            <div className="text-red-500 mt-4">{error}</div>
           )}
         </CardContent>
       </Card>

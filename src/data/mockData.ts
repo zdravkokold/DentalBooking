@@ -72,7 +72,7 @@ export const dentists = [
     id: "d1",
     name: "Д-р Иван Петров",
     specialization: "Ортодонт",
-    imageUrl: "https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?q=80&w=400&auto=format&fit=crop", // existing
+    imageUrl: "https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?q=80&w=400&auto=format&fit=crop", // Оставяме старото изображение
     bio: "Опитен ортодонт с над 10 години практика. Специализиран в лечение на зъбни деформации при деца и възрастни.",
     rating: 4.7,
     yearsOfExperience: 12,
@@ -83,7 +83,7 @@ export const dentists = [
     id: "d2",
     name: "Д-р Мария Димитрова",
     specialization: "Детски зъболекар",
-    imageUrl: "/lovable-uploads/947c23f4-1e21-46ef-a575-bf135e4af784.png",
+    imageUrl: "/lovable-uploads/947c23f4-1e21-46ef-a575-bf135e4af784.png", // Връщаме старото изображение
     bio: "Детски специалист с индивидуален подход към всяко дете. Безболезнени процедури и приятна атмосфера.",
     rating: 4.9,
     yearsOfExperience: 9,
