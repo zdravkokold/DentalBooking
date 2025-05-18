@@ -35,10 +35,44 @@ const fallbackSlots = [
   },
 ];
 
+// Fallback demo slots: always create 14 bookable dates starting from today (weekdays only)
+function getFallbackSlots() {
+  const slots: any[] = [];
+  let dayCount = 0;
+  let date = new Date();
+  while (slots.length < 14 && dayCount < 31) {
+    if (date.getDay() !== 0 && date.getDay() !== 6) {
+      const dateStr = format(date, 'yyyy-MM-dd');
+      slots.push({
+        id: `fallback-${dateStr}-am`,
+        dentistId: "d1",
+        serviceId: "s1",
+        date: dateStr,
+        startTime: "09:00",
+        endTime: "09:30",
+        isAvailable: true,
+      });
+      slots.push({
+        id: `fallback-${dateStr}-pm`,
+        dentistId: "d1",
+        serviceId: "s1",
+        date: dateStr,
+        startTime: "10:00",
+        endTime: "10:30",
+        isAvailable: true,
+      });
+    }
+    date.setDate(date.getDate() + 1);
+    dayCount++;
+  }
+  return slots;
+}
+
+// Replace fallback logic entirely:
 const appointmentSlots =
   (originalAppointmentSlots && originalAppointmentSlots.length > 0)
     ? originalAppointmentSlots
-    : fallbackSlots;
+    : getFallbackSlots();
 
 interface TimeSlot {
   id: string;
@@ -65,7 +99,7 @@ const CalendarComponent = ({ dentistId, serviceId, onAppointmentSelected }: Cale
   const navigate = useNavigate();
 
   // Достъпни дати само за избрания зъболекар/услуга
-  const availableDates = Array.from(
+  const realAvailableDates = Array.from(
     new Set(
       appointmentSlots
         .filter(slot =>
@@ -75,6 +109,22 @@ const CalendarComponent = ({ dentistId, serviceId, onAppointmentSelected }: Cale
         ).map(slot => slot.date)
     )
   );
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  let availableDates: string[] = realAvailableDates;
+  if (realAvailableDates.length === 0) {
+    // Demo fallback: next 14 weekdays starting from today
+    availableDates = [];
+    let d = new Date();
+    while (availableDates.length < 14) {
+      if (d.getDay() !== 0 && d.getDay() !== 6) {
+        availableDates.push(format(d, 'yyyy-MM-dd'));
+      }
+      d.setDate(d.getDate() + 1);
+    }
+  }
 
   // Проверка дали дадена дата е налична
   const isDayAvailable = (date: Date) => {
@@ -278,7 +328,7 @@ const CalendarComponent = ({ dentistId, serviceId, onAppointmentSelected }: Cale
               : 'Изберете дата, за да видите наличните часове'}
           </h3>
           {selectedDate && timeSlots.length === 0 && (
-            <p className="text-gray-500">Няма налични часове за избраната дата.</p>
+            <p className="text-gray-500">Няма налични часове за избранат�� дата.</p>
           )}
           <ScrollArea className="h-[400px] pr-4">
             <div className="space-y-6">
