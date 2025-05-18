@@ -4,7 +4,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { appointmentSlots } from '@/data/mockData';
-import { format, isSameDay, parseISO } from 'date-fns';
+import { format, isSameDay } from 'date-fns';
 import { bg } from 'date-fns/locale';
 import { ChevronRight, Check, Clock } from 'lucide-react';
 import { toast } from 'sonner';
@@ -35,7 +35,7 @@ const CalendarComponent = ({ dentistId, serviceId, onAppointmentSelected }: Cale
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  // Филтрирани налични дати САМО за избрания зъболекар
+  // Списък с налични дати за избрания зъболекар
   const availableDates = Array.from(
     new Set(
       appointmentSlots
@@ -44,14 +44,14 @@ const CalendarComponent = ({ dentistId, serviceId, onAppointmentSelected }: Cale
     )
   );
 
-  // Дали даден ден е наличен за резервация
+  // Дали дадена дата е налична
   const isDayAvailable = (date: Date) => {
-    return availableDates.some(availableDate => 
+    return availableDates.some(availableDate =>
       isSameDay(new Date(availableDate), date)
     );
   };
 
-  // Взимане на свободните слотове за дата и зъболекар
+  // Слотове за конкретен ден
   const getTimeSlotsForDay = (date: Date): TimeSlot[] => {
     if (!date) return [];
     const dateString = format(date, 'yyyy-MM-dd');
@@ -82,12 +82,13 @@ const CalendarComponent = ({ dentistId, serviceId, onAppointmentSelected }: Cale
 
   const timeSlots = selectedDate ? getTimeSlotsForDay(selectedDate) : [];
 
+  // Добавям логове и коригиране при избор
   const handleDateChange = (date: Date | undefined) => {
     setSelectedDate(date);
     setSelectedSlotId(null);
     setSelectedSlot(null);
     setError(null);
-    if (date) console.log("[КАЛЕНДАР] Избрана дата:", date);
+    console.log("[КАЛЕНДАР] Избрана дата:", date);
   };
 
   const handleSlotSelect = (slot: TimeSlot) => {
@@ -97,7 +98,6 @@ const CalendarComponent = ({ dentistId, serviceId, onAppointmentSelected }: Cale
     console.log("[КАЛЕНДАР] Избран слот:", slot);
   };
 
-  // Helper function to validate UUID (тест вариант, за back на dev)
   const validateUUID = (id?: string): string => {
     if (!id) return "00000000-0000-4000-a000-000000000000";
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -165,7 +165,7 @@ const CalendarComponent = ({ dentistId, serviceId, onAppointmentSelected }: Cale
     }
   };
 
-  // Групиране на часовете по часове за по-добър UI
+  // Групиране на часовете за по-добър UI
   const groupTimeSlotsByHour = () => {
     const groupedSlots: Record<string, TimeSlot[]> = {};
     timeSlots.forEach(slot => {
@@ -178,7 +178,7 @@ const CalendarComponent = ({ dentistId, serviceId, onAppointmentSelected }: Cale
   };
   const groupedTimeSlots = groupTimeSlotsByHour();
 
-  // === НАЙ-ВАЖНО: Календарът вече е с pointer-events-auto ===
+  // Календарът е напълно интерактивен благодарение на pointer-events-auto!
   return (
     <div className="grid md:grid-cols-12 gap-6">
       <Card className="md:col-span-5 shadow-sm">
@@ -190,7 +190,7 @@ const CalendarComponent = ({ dentistId, serviceId, onAppointmentSelected }: Cale
               selected={selectedDate}
               onSelect={handleDateChange}
               locale={bg}
-              className="mx-auto pointer-events-auto"
+              className="mx-auto pointer-events-auto" // !!! Ключово
               modifiers={{
                 available: isDayAvailable
               }}
@@ -279,4 +279,3 @@ const CalendarComponent = ({ dentistId, serviceId, onAppointmentSelected }: Cale
 };
 
 export default CalendarComponent;
-
