@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent } from '@/components/ui/card';
@@ -72,7 +71,7 @@ const CalendarComponent = ({ dentistId, serviceId, onAppointmentSelected }: Cale
         .filter(slot =>
           slot.isAvailable &&
           (!dentistId || slot.dentistId === dentistId) &&
-          (!serviceId || slot.serviceId === serviceId)
+          (!serviceId || (slot as any).serviceId === undefined || (slot as any).serviceId === serviceId)
         ).map(slot => slot.date)
     )
   );
@@ -99,7 +98,7 @@ const CalendarComponent = ({ dentistId, serviceId, onAppointmentSelected }: Cale
         slot.date === dateString &&
         slot.isAvailable &&
         (!dentistId || slot.dentistId === dentistId) &&
-        (!serviceId || slot.serviceId === serviceId)
+        (!serviceId || (slot as any).serviceId === undefined || (slot as any).serviceId === serviceId)
       )
       .sort((a, b) => {
         const aTime = a.startTime.split(':').map(Number);
@@ -113,8 +112,8 @@ const CalendarComponent = ({ dentistId, serviceId, onAppointmentSelected }: Cale
             startTime: slot.startTime,
             endTime: slot.endTime,
             isAvailable: slot.isAvailable,
-            dentistId: slot.dentistId,      // add for type safety
-            serviceId: slot.serviceId       // add for type safety
+            dentistId: slot.dentistId,
+            serviceId: (slot as any).serviceId, // optional or undefined
           });
         }
       });
@@ -334,4 +333,3 @@ const CalendarComponent = ({ dentistId, serviceId, onAppointmentSelected }: Cale
 };
 
 export default CalendarComponent;
-
