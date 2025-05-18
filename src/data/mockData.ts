@@ -121,7 +121,7 @@ export const appointmentSlots = [
     date: "2024-07-15",
     startTime: "10:00",
     endTime: "10:30",
-    isAvailable: false
+    isAvailable: true
   },
   {
     id: "4",
@@ -153,7 +153,7 @@ export const appointmentSlots = [
     date: "2024-07-17",
     startTime: "14:30",
     endTime: "15:00",
-    isAvailable: false
+    isAvailable: true
   },
   {
     id: "8",

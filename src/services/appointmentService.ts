@@ -1,8 +1,8 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Appointment, AppointmentHistory, Report } from '@/data/models';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
+import { format, addMinutes, parseISO } from 'date-fns';
+import { Appointment, TimeSlot, WorkingHours } from '@/types';
 
 // Define the type of appointment status for type safety
 type AppointmentStatus = 'pending' | 'confirmed' | 'scheduled' | 'completed' | 'cancelled';
@@ -23,205 +23,189 @@ const mapAppointmentFromDB = (dbAppointment: any): Appointment => {
   };
 };
 
-export const appointmentService = {
-  // Get all appointments
-  getAllAppointments: async (): Promise<Appointment[]> => {
+class AppointmentService {
+  async createAppointment(appointment: Omit<Appointment, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
     try {
+      // Validate appointment time
+      if (!this.isValidAppointmentTime(appointment)) {
+        throw new Error('Invalid appointment time');
+      }
+
+      // Check for conflicts
+      const hasConflict = await this.checkForConflicts(appointment);
+      if (hasConflict) {
+        throw new Error('This time slot is no longer available');
+      }
+
+      // Create appointment
       const { data, error } = await supabase
         .from('appointments')
-        .select('*');
-      
-      if (error) {
-        console.error('Error fetching appointments:', error);
-        throw error;
-      }
-      
-      return data ? data.map(mapAppointmentFromDB) : [];
-    } catch (error) {
-      console.error('Error fetching appointments:', error);
-      toast.error('Грешка при зареждане на часовете');
-      return []; // Return empty array on error
-    }
-  },
+        .insert([{
+          ...appointment,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }])
+        .select('id')
+        .single();
 
-  // Get appointments for a specific dentist
-  getDentistAppointments: async (dentistId: string): Promise<Appointment[]> => {
+      if (error) throw error;
+      return data.id;
+    } catch (error: any) {
+      console.error('Error creating appointment:', error);
+      throw new Error(error.message || 'Failed to create appointment');
+    }
+  }
+
+  async getDentistAppointments(dentistId: string, date?: string): Promise<Appointment[]> {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('appointments')
         .select('*')
         .eq('dentist_id', dentistId);
-      
-      if (error) {
-        console.error('Error fetching dentist appointments:', error);
-        return getMockAppointments(dentistId);
+
+      if (date) {
+        query = query.eq('date', date);
       }
-      
-      console.log('Fetched dentist appointments:', data);
-      return data ? data.map(mapAppointmentFromDB) : [];
-    } catch (error) {
+
+      const { data, error } = await query;
+      if (error) throw error;
+      return data;
+    } catch (error: any) {
       console.error('Error fetching dentist appointments:', error);
-      toast.error('Грешка при зареждане на часовете на зъболекаря');
-      return getMockAppointments(dentistId); // Return mock data on error
-    }
-  },
-
-  // Create a new appointment
-  createAppointment: async (appointmentData: Omit<Appointment, 'id' | 'createdAt'>): Promise<string> => {
-    try {
-      console.log('Creating appointment with data:', appointmentData);
-      
-      // Validate UUIDs before sending to the database
-      const validPatientId = validateUUID(appointmentData.patientId);
-      const validDentistId = validateUUID(appointmentData.dentistId);
-      const validServiceId = validateUUID(appointmentData.serviceId);
-      
-      if (!validPatientId || !validDentistId || !validServiceId) {
-        console.error('Invalid UUID format in appointment data:', { 
-          patientId: appointmentData.patientId,
-          dentistId: appointmentData.dentistId,
-          serviceId: appointmentData.serviceId
-        });
-        toast.error('Грешка при запазване на час: невалидни данни');
-        return crypto.randomUUID();
-      }
-      
-      // Call the create_appointment RPC function with the correct parameter order
-      const { data, error } = await supabase.rpc('create_appointment', {
-        p_patient_id: validPatientId,
-        p_dentist_id: validDentistId,
-        p_service_id: validServiceId,
-        p_date: appointmentData.date,
-        p_time: appointmentData.startTime,
-        p_status: appointmentData.status || 'scheduled'
-      });
-
-      if (error) {
-        console.error('Error creating appointment:', error);
-        toast.error('Грешка при запазване на час');
-        // Return mock ID instead of throwing error
-        return crypto.randomUUID();
-      }
-
-      toast.success('Часът е запазен успешно');
-      return data || crypto.randomUUID();
-    } catch (error) {
-      console.error('Error creating appointment:', error);
-      toast.error('Грешка при запазване на час');
-      return crypto.randomUUID();
-    }
-  },
-
-  // Update appointment status
-  updateAppointmentStatus: async (id: string, status: string): Promise<void> => {
-    try {
-      try {
-        const { error } = await supabase
-          .from('appointments')
-          .update({ status })
-          .eq('id', id);
-
-        if (error) {
-          console.error('Error updating appointment status:', error);
-          toast.error('Грешка при обновяване на статуса на часа');
-          return;
-        }
-
-        toast.success('Статусът на часа е обновен успешно');
-      } catch (dbError) {
-        console.error('Database error updating appointment:', dbError);
-        toast.success('Статусът на часа е обновен успешно (локално)');
-      }
-    } catch (error) {
-      console.error('Error updating appointment status:', error);
-      toast.error('Грешка при обновяване на статуса на часа');
-    }
-  },
-
-  // Get appointment history with optional filters
-  getAppointmentHistory: async (filters?: {
-    patientId?: string;
-    dentistId?: string;
-    status?: string;
-    startDate?: string;
-    endDate?: string;
-  } | 'week' | 'month' | 'all'): Promise<AppointmentHistory[]> => {
-    try {
-      // This would ideally use a view or a join in the database
-      // For now, we'll simulate with a mock implementation
-      // In a real implementation, you'd use supabase.from(...).select(...) with proper joins
-      
-      // Mock data for demo
-      const mockAppointmentHistories: AppointmentHistory[] = [
-        {
-          appointment: {
-            id: "1",
-            patientId: "p1",
-            dentistId: "d1",
-            serviceId: "s1",
-            date: new Date().toISOString(),
-            startTime: "10:00",
-            endTime: "11:00",
-            status: "completed",
-            notes: "Patient arrived on time",
-            createdAt: new Date().toISOString()
-          },
-          patient: {
-            id: "p1",
-            name: "Ivan Ivanov",
-            email: "ivan@example.com",
-            phone: "+359888123456",
-            healthStatus: "No allergies"
-          },
-          dentist: {
-            id: "d1",
-            name: "Dr. Petrov",
-            specialization: "Зъболекар",
-            imageUrl: "/placeholder.svg",
-            bio: "Experienced зъболекар",
-            rating: 4.8,
-            yearsOfExperience: 15,
-            education: "Medical University Sofia",
-            languages: ["Bulgarian", "English"]
-          },
-          service: {
-            id: "s1",
-            name: "Dental Cleaning",
-            description: "Professional teeth cleaning",
-            price: 100,
-            duration: 60,
-            imageUrl: "/placeholder.svg"
-          }
-        }
-      ];
-      
-      return mockAppointmentHistories;
-    } catch (error) {
-      console.error('Error fetching appointment history:', error);
-      return []; // Return empty array on error
-    }
-  },
-  
-  // Generate report
-  generateReport: async (startDate: string, endDate: string): Promise<Report> => {
-    try {
-      // In a real implementation, you'd create a database query to aggregate this data
-      // For demo, return mock report data
-      return {
-        startDate,
-        endDate,
-        totalAppointments: 45,
-        completedAppointments: 30,
-        cancelledAppointments: 5,
-        patientCount: 25
-      };
-    } catch (error) {
-      console.error('Error generating report:', error);
-      toast.error('Грешка при генериране на справка');
-      throw error;
+      throw new Error(error.message || 'Failed to fetch appointments');
     }
   }
-};
+
+  async getAvailableTimeSlots(
+    dentistId: string,
+    date: string,
+    serviceId?: string
+  ): Promise<TimeSlot[]> {
+    try {
+      // Get dentist's working hours
+      const { data: workingHours, error: whError } = await supabase
+        .from('working_hours')
+        .select('*')
+        .eq('dentist_id', dentistId)
+        .eq('day_of_week', new Date(date).getDay());
+
+      if (whError) throw whError;
+
+      // Get existing appointments
+      const { data: appointments, error: apptError } = await supabase
+        .from('appointments')
+        .select('*')
+        .eq('dentist_id', dentistId)
+        .eq('date', date);
+
+      if (apptError) throw apptError;
+
+      // Get service duration
+      let duration = 30; // default duration
+      if (serviceId) {
+        const { data: service, error: serviceError } = await supabase
+          .from('services')
+          .select('duration')
+          .eq('id', serviceId)
+          .single();
+
+        if (serviceError) throw serviceError;
+        if (service) duration = service.duration;
+      }
+
+      return this.generateTimeSlots(workingHours, appointments, date, duration);
+    } catch (error: any) {
+      console.error('Error fetching available time slots:', error);
+      throw new Error(error.message || 'Failed to fetch available time slots');
+    }
+  }
+
+  private generateTimeSlots(
+    workingHours: WorkingHours[],
+    appointments: Appointment[],
+    date: string,
+    duration: number
+  ): TimeSlot[] {
+    const slots: TimeSlot[] = [];
+    
+    workingHours.forEach(wh => {
+      if (!wh.isAvailable) return;
+
+      let currentTime = parseISO(`${date}T${wh.startTime}`);
+      const endTime = parseISO(`${date}T${wh.endTime}`);
+
+      while (currentTime < endTime) {
+        const slotEndTime = addMinutes(currentTime, duration);
+        if (slotEndTime > endTime) break;
+
+        const isAvailable = !this.isTimeSlotConflicting(
+          currentTime,
+          slotEndTime,
+          appointments
+        );
+
+        if (isAvailable) {
+          slots.push({
+            id: `${date}-${format(currentTime, 'HH:mm')}-${wh.dentistId}`,
+            dentistId: wh.dentistId,
+            date: date,
+            startTime: format(currentTime, 'HH:mm'),
+            endTime: format(slotEndTime, 'HH:mm'),
+            isAvailable: true
+          });
+        }
+
+        currentTime = slotEndTime;
+      }
+    });
+
+    return slots;
+  }
+
+  private isTimeSlotConflicting(
+    start: Date,
+    end: Date,
+    appointments: Appointment[]
+  ): boolean {
+    return appointments.some(appt => {
+      const apptStart = parseISO(`${appt.date}T${appt.startTime}`);
+      const apptEnd = parseISO(`${appt.date}T${appt.endTime}`);
+      return (
+        (start >= apptStart && start < apptEnd) ||
+        (end > apptStart && end <= apptEnd) ||
+        (start <= apptStart && end >= apptEnd)
+      );
+    });
+  }
+
+  private isValidAppointmentTime(appointment: Partial<Appointment>): boolean {
+    if (!appointment.date || !appointment.startTime || !appointment.endTime) {
+      return false;
+    }
+
+    const start = parseISO(`${appointment.date}T${appointment.startTime}`);
+    const end = parseISO(`${appointment.date}T${appointment.endTime}`);
+    const now = new Date();
+
+    return start > now && end > start;
+  }
+
+  private async checkForConflicts(appointment: Partial<Appointment>): Promise<boolean> {
+    if (!appointment.dentistId || !appointment.date) return true;
+
+    const { data: conflicts, error } = await supabase
+      .from('appointments')
+      .select('*')
+      .eq('dentist_id', appointment.dentistId)
+      .eq('date', appointment.date)
+      .overlaps('start_time', [appointment.startTime, appointment.endTime]);
+
+    if (error) throw error;
+    return conflicts.length > 0;
+  }
+}
+
+export const appointmentService = new AppointmentService();
 
 // Helper function to validate UUID format
 function validateUUID(id: string): string | null {
