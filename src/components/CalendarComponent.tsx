@@ -112,7 +112,9 @@ const CalendarComponent = ({ dentistId, serviceId, onAppointmentSelected }: Cale
             id: slot.id,
             startTime: slot.startTime,
             endTime: slot.endTime,
-            isAvailable: slot.isAvailable
+            isAvailable: slot.isAvailable,
+            dentistId: slot.dentistId,      // add for type safety
+            serviceId: slot.serviceId       // add for type safety
           });
         }
       });
