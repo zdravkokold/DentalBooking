@@ -48,22 +48,6 @@ export const services = [
     price: 100,
     duration: 60,
     imageUrl: "/placeholder.svg"
-  },
-  {
-    id: "s7",
-    name: "Вадене на зъб",
-    description: "Екстракция на зъб при необходимост",
-    price: 150,
-    duration: 45,
-    imageUrl: "/placeholder.svg"
-  },
-  {
-    id: "s8",
-    name: "Детска дентална медицина",
-    description: "Грижа за зъбите на децата",
-    price: 60,
-    duration: 30,
-    imageUrl: "/placeholder.svg"
   }
 ];
 
@@ -72,7 +56,7 @@ export const dentists = [
     id: "d1",
     name: "Д-р Иван Петров",
     specialization: "Ортодонт",
-    imageUrl: "https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?q=80&w=400&auto=format&fit=crop", // Оставяме старото изображение
+    imageUrl: "https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?q=80&w=400&auto=format&fit=crop",
     bio: "Опитен ортодонт с над 10 години практика. Специализиран в лечение на зъбни деформации при деца и възрастни.",
     rating: 4.7,
     yearsOfExperience: 12,
@@ -83,7 +67,7 @@ export const dentists = [
     id: "d2",
     name: "Д-р Мария Димитрова",
     specialization: "Детски зъболекар",
-    imageUrl: "/lovable-uploads/947c23f4-1e21-46ef-a575-bf135e4af784.png", // Връщаме старото изображение
+    imageUrl: "/lovable-uploads/e2061b8c-2663-4791-aa80-125bacad05cd.png",
     bio: "Детски специалист с индивидуален подход към всяко дете. Безболезнени процедури и приятна атмосфера.",
     rating: 4.9,
     yearsOfExperience: 9,
@@ -100,6 +84,17 @@ export const dentists = [
     yearsOfExperience: 15,
     education: "МУ Варна",
     languages: ["Bulgarian", "German"]
+  },
+  {
+    id: "d4",
+    name: "Д-р Николай Стефанов",
+    specialization: "Терапевт",
+    imageUrl: "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?q=80&w=400&auto=format&fit=crop",
+    bio: "Терапевт с дългогодишен опит и внимание към пациента.",
+    rating: 4.6,
+    yearsOfExperience: 11,
+    education: "МУ Пловдив",
+    languages: ["Bulgarian", "English"]
   }
 ];
 

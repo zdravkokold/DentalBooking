@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
@@ -36,6 +35,7 @@ const Register = () => {
     
     try {
       const name = `${firstName} ${lastName}`;
+      // При регистрация добавяме custom fields
       await register({
         email,
         password,
@@ -44,7 +44,8 @@ const Register = () => {
         firstName,
         lastName,
         phone,
-        role
+        role,
+        // Тези атрибути ще се запишат и в базата за профила на потребителя
       });
     } catch (error) {
       console.error('Registration error:', error);

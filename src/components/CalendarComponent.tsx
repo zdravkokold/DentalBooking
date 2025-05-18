@@ -34,7 +34,7 @@ const CalendarComponent = ({ dentistId, serviceId, onAppointmentSelected }: Cale
   const { user } = useAuth();
   const navigate = useNavigate();
   
-  // Get available dates (dates that have at least one available slot)
+  // Актуализирано: наличните дати взимат slots за всички дентсити, затова когато е избран конкретен трябва да филтрираме само техните isAvailable слотове!
   const availableDates = Array.from(
     new Set(
       appointmentSlots
@@ -53,31 +53,21 @@ const CalendarComponent = ({ dentistId, serviceId, onAppointmentSelected }: Cale
   // Get time slots for selected date and dentist
   const getTimeSlotsForDay = (date: Date): TimeSlot[] => {
     if (!date) return [];
-    
     const dateString = format(date, 'yyyy-MM-dd');
-    
-    // Filter and sort slots, then ensure we don't have duplicates based on start time
     const uniqueSlots = new Map();
-    
-    appointmentSlots
-      .filter(slot => 
-        slot.date === dateString && 
-        slot.isAvailable && 
+    appointmentSlots // филтрираме и по услуга ако има (за бъдещо разширение)
+      .filter(slot =>
+        slot.date === dateString &&
+        slot.isAvailable &&
         (!dentistId || slot.dentistId === dentistId)
       )
       .sort((a, b) => {
-        // Sort by hours first
-        const aHour = parseInt(a.startTime.split(':')[0]);
-        const bHour = parseInt(b.startTime.split(':')[0]);
-        if (aHour !== bHour) return aHour - bHour;
-        
-        // If hours are equal, sort by minutes
-        const aMinute = parseInt(a.startTime.split(':')[1]);
-        const bMinute = parseInt(b.startTime.split(':')[1]);
-        return aMinute - bMinute;
+        // Сортиране по часове и минути
+        const aTime = a.startTime.split(':').map(Number);
+        const bTime = b.startTime.split(':').map(Number);
+        return aTime[0] - bTime[0] || aTime[1] - bTime[1];
       })
       .forEach(slot => {
-        // Use the startTime as the key to avoid duplicates
         if (!uniqueSlots.has(slot.startTime)) {
           uniqueSlots.set(slot.startTime, {
             id: slot.id,
@@ -87,7 +77,6 @@ const CalendarComponent = ({ dentistId, serviceId, onAppointmentSelected }: Cale
           });
         }
       });
-    
     return Array.from(uniqueSlots.values());
   };
 
@@ -195,6 +184,7 @@ const CalendarComponent = ({ dentistId, serviceId, onAppointmentSelected }: Cale
 
   const groupedTimeSlots = groupTimeSlotsByHour();
 
+  // Фикс: при избор на дата от календара ВСИЧКО трябва да е интерактивно
   return (
     <div className="grid md:grid-cols-12 gap-6">
       <Card className="md:col-span-5 shadow-sm">
@@ -239,11 +229,9 @@ const CalendarComponent = ({ dentistId, serviceId, onAppointmentSelected }: Cale
               ? `Налични часове за ${format(selectedDate, 'dd MMMM yyyy', { locale: bg })}` 
               : 'Изберете дата, за да видите наличните часове'}
           </h3>
-
-          {selectedDate && timeSlots.length === 0 && (
+          {selectedDate && getTimeSlotsForDay(selectedDate).length === 0 && (
             <p className="text-gray-500">Няма налични часове за избраната дата.</p>
           )}
-
           <ScrollArea className="h-[400px] pr-4">
             <div className="space-y-6">
               {groupedTimeSlots.map(([hourRange, slots]) => (
@@ -275,7 +263,6 @@ const CalendarComponent = ({ dentistId, serviceId, onAppointmentSelected }: Cale
               ))}
             </div>
           </ScrollArea>
-
           {selectedSlotId && (
             <div className="mt-6 flex justify-end animate-fade-in">
               <Button 
