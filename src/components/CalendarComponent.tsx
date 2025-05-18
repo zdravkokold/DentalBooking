@@ -19,200 +19,161 @@ interface CalendarComponentProps {
   onAppointmentSelected?: (appointmentId: string) => void;
 }
 
-const CalendarComponent = ({ dentistId, serviceId, onAppointmentSelected }: CalendarComponentProps) => {
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+const CalendarComponent: React.FC<CalendarComponentProps> = ({
+  dentistId,
+  serviceId,
+  onAppointmentSelected
+}) => {
+  const [date, setDate] = useState<Date>(new Date());
   const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null);
-  const [isBooking, setIsBooking] = useState<boolean>(false);
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  // Fetch available time slots when date is selected
-  const { data: timeSlots = [], isLoading: isLoadingSlots } = useQuery({
-    queryKey: ['availableTimeSlots', dentistId, serviceId, selectedDate?.toISOString()],
-    queryFn: () => selectedDate 
-      ? appointmentService.getAvailableTimeSlots(
-          dentistId || '',
-          format(selectedDate, 'yyyy-MM-dd'),
+  // Fetch available time slots
+  const { data: timeSlots, isLoading, error, refetch } = useQuery({
+    queryKey: ['timeSlots', dentistId, date, serviceId],
+    queryFn: async () => {
+      if (!dentistId) {
+        console.error('No dentist selected');
+        return [];
+      }
+      try {
+        const slots = await appointmentService.getAvailableTimeSlots(
+          dentistId,
+          format(date, 'yyyy-MM-dd'),
           serviceId
-        )
-      : Promise.resolve([]),
-    enabled: !!selectedDate && !!dentistId
+        );
+        console.log('Fetched time slots:', slots);
+        return slots;
+      } catch (error) {
+        console.error('Error fetching time slots:', error);
+        throw error;
+      }
+    },
+    enabled: !!dentistId && !!date
   });
 
-  // Handle date selection
-  const handleDateChange = (date: Date | undefined) => {
-    setSelectedDate(date);
-    setSelectedSlot(null);
+  const handleDateSelect = (newDate: Date | undefined) => {
+    if (newDate) {
+      setDate(newDate);
+      setSelectedSlot(null);
+    }
   };
 
-  // Handle slot selection
   const handleSlotSelect = (slot: TimeSlot) => {
     setSelectedSlot(slot);
   };
 
-  // Handle appointment booking
   const handleBookAppointment = async () => {
     if (!user) {
-      toast.error("Моля, влезте в акаунта си за да запазите час.", { 
-        description: "Пренасочване към вход..." 
-      });
+      toast.error('Моля, влезте в профила си, за да запазите час.');
       navigate('/login');
       return;
     }
 
-    if (!selectedSlot || !selectedDate) {
-      toast.error("Моля, изберете дата и час.");
+    if (!selectedSlot || !dentistId || !serviceId) {
+      toast.error('Моля, изберете час и услуга.');
       return;
     }
 
-    setIsBooking(true);
     try {
-      const appointmentId = await appointmentService.createAppointment({
+      const appointment = await appointmentService.createAppointment({
         patientId: user.id,
-        dentistId: selectedSlot.dentistId,
-        serviceId: serviceId || '',
-        date: format(selectedDate, 'yyyy-MM-dd'),
+        dentistId: dentistId,
+        serviceId: serviceId,
+        date: format(date, 'yyyy-MM-dd'),
         startTime: selectedSlot.startTime,
         endTime: selectedSlot.endTime,
-        status: 'scheduled',
-        notes: ''
+        status: 'pending'
       });
 
-      toast.success("Часът е запазен успешно!", {
-        description: `Записахте час за ${format(selectedDate, 'dd.MM.yyyy')} в ${selectedSlot.startTime} ч.`
-      });
-
-      if (onAppointmentSelected) {
-        onAppointmentSelected(appointmentId);
-      }
-
-      // Redirect to appointments page after successful booking
-      setTimeout(() => navigate('/patient?tab=appointments'), 800);
+      toast.success('Часът е запазен успешно!');
+      onAppointmentSelected?.(appointment.id);
+      setSelectedSlot(null);
+      refetch();
     } catch (error: any) {
-      toast.error("Грешка при запазване на час.", {
-        description: error.message || "Моля, опитайте отново или се свържете с нас."
-      });
-    } finally {
-      setIsBooking(false);
+      console.error('Error booking appointment:', error);
+      toast.error(error.message || 'Възникна грешка при запазването на час.');
     }
   };
 
-  // Group time slots by hour for better UI
-  const groupTimeSlotsByHour = () => {
-    const groupedSlots: Record<string, TimeSlot[]> = {};
-    timeSlots.forEach(slot => {
-      const hour = parseInt(slot.startTime.split(':')[0]);
-      const hourKey = `${hour.toString().padStart(2, '0')}:00 - ${(hour+1).toString().padStart(2, '0')}:00`;
-      if (!groupedSlots[hourKey]) groupedSlots[hourKey] = [];
-      groupedSlots[hourKey].push(slot);
-    });
-    return Object.entries(groupedSlots).sort(([a], [b]) => parseInt(a) - parseInt(b));
-  };
+  if (error) {
+    console.error('Error in CalendarComponent:', error);
+    return (
+      <div className="text-center text-red-500">
+        Възникна грешка при зареждането на свободните часове.
+      </div>
+    );
+  }
 
   return (
-    <div className="grid md:grid-cols-12 gap-6">
-      <Card className="md:col-span-5 shadow-sm">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {/* Calendar */}
+      <Card>
         <CardContent className="p-4">
-          <h3 className="text-lg font-medium mb-4">Изберете дата</h3>
-          <div className="flex justify-center">
-            <Calendar
-              mode="single"
-              selected={selectedDate}
-              onSelect={handleDateChange}
-              locale={bg}
-              className="mx-auto"
-              disabled={(date) => {
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-                return (
-                  date < today ||
-                  date.getDay() === 0 ||
-                  date.getDay() === 6
-                );
-              }}
-            />
-          </div>
-          <div className="flex items-center gap-2 mt-4 text-sm text-gray-500 justify-center">
-            <div className="w-3 h-3 rounded-full bg-dental-teal"></div>
-            <span>Налични часове</span>
-          </div>
+          <Calendar
+            mode="single"
+            selected={date}
+            onSelect={handleDateSelect}
+            locale={bg}
+            disabled={(date) => date < new Date() || date.getDay() === 0 || date.getDay() === 6}
+            className="rounded-md"
+          />
         </CardContent>
       </Card>
 
-      <Card className="md:col-span-7 shadow-sm">
+      {/* Time Slots */}
+      <Card>
         <CardContent className="p-4">
-          <h3 className="text-lg font-medium mb-4">
-            {selectedDate
-              ? `Налични часове за ${format(selectedDate, 'dd MMMM yyyy', { locale: bg })}`
-              : 'Изберете дата, за да видите наличните часове'}
+          <h3 className="text-lg font-semibold mb-4">
+            Свободни часове за {format(date, 'dd.MM.yyyy', { locale: bg })}
           </h3>
 
-          {isLoadingSlots ? (
-            <div className="flex items-center justify-center h-[300px]">
+          {isLoading ? (
+            <div className="flex items-center justify-center py-8">
               <Loader2 className="h-8 w-8 animate-spin text-dental-teal" />
             </div>
-          ) : (
+          ) : timeSlots && timeSlots.length > 0 ? (
             <ScrollArea className="h-[300px] pr-4">
-              {selectedDate && timeSlots.length === 0 && (
-                <p className="text-gray-500 text-center">
-                  Няма налични часове за избраната дата.
-                </p>
-              )}
-              
-              {selectedDate && timeSlots.length > 0 && (
-                <div className="space-y-6">
-                  {groupTimeSlotsByHour().map(([hourRange, slots]) => (
-                    <div key={hourRange} className="animate-fade-in">
-                      <div className="flex items-center mb-2 text-md font-medium text-gray-700">
-                        <Clock className="h-4 w-4 mr-1 text-dental-teal" />
-                        <h4>{hourRange}</h4>
-                      </div>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                        {slots.map(slot => (
-                          <Button
-                            key={slot.id}
-                            variant={selectedSlot?.id === slot.id ? "default" : "outline"}
-                            className={`
-                              ${selectedSlot?.id === slot.id
-                                ? 'bg-dental-teal hover:bg-dental-teal/90'
-                                : 'hover:border-dental-teal hover:text-dental-teal'
-                              }
-                              transition-all
-                            `}
-                            onClick={() => handleSlotSelect(slot)}
-                          >
-                            {selectedSlot?.id === slot.id && (
-                              <Check className="mr-1 h-4 w-4" />
-                            )}
-                            {slot.startTime}
-                          </Button>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {timeSlots.map((slot) => (
+                  <Button
+                    key={slot.id}
+                    variant={selectedSlot?.id === slot.id ? 'default' : 'outline'}
+                    className={`w-full justify-start gap-2 ${
+                      !slot.isAvailable ? 'opacity-50 cursor-not-allowed' : ''
+                    }`}
+                    onClick={() => slot.isAvailable && handleSlotSelect(slot)}
+                    disabled={!slot.isAvailable}
+                  >
+                    <Clock className="h-4 w-4" />
+                    <span>{slot.startTime}</span>
+                    {selectedSlot?.id === slot.id && (
+                      <Check className="h-4 w-4 ml-auto" />
+                    )}
+                  </Button>
+                ))}
+              </div>
             </ScrollArea>
+          ) : (
+            <p className="text-center text-gray-500 py-8">
+              Няма налични часове за избраната дата.
+            </p>
           )}
-          
+
           {selectedSlot && (
-            <div className="mt-6 flex justify-end animate-fade-in">
+            <div className="mt-6">
               <Button
-                className="bg-dental-teal hover:bg-dental-teal/90"
+                className="w-full gap-2"
                 onClick={handleBookAppointment}
-                disabled={isBooking}
+                disabled={isLoading}
               >
-                {isBooking ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Обработване...
-                  </>
+                {isLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
-                  <>
-                    Запази час
-                    <ChevronRight className="ml-1 h-4 w-4" />
-                  </>
+                  <ChevronRight className="h-4 w-4" />
                 )}
+                Запази час
               </Button>
             </div>
           )}

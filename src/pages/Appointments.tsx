@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
@@ -12,7 +11,9 @@ import { CalendarClock, Filter } from 'lucide-react';
 
 const Appointments = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [selectedDentist, setSelectedDentist] = useState<string>(searchParams.get('dentistId') || 'all');
+  const [selectedDentist, setSelectedDentist] = useState<string>(
+    searchParams.get('dentistId') || dentists[0]?.id || 'all'
+  );
   const [selectedService, setSelectedService] = useState<string>(searchParams.get('serviceId') || 'all');
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
@@ -119,7 +120,7 @@ const Appointments = () => {
                 </CardHeader>
                 <CardContent>
                   <CalendarComponent 
-                    dentistId={selectedDentist !== 'all' ? selectedDentist : undefined}
+                    dentistId={selectedDentist !== 'all' ? selectedDentist : dentists[0]?.id}
                     serviceId={selectedService !== 'all' ? selectedService : undefined}
                     onAppointmentSelected={handleAppointmentSelected} 
                   />
