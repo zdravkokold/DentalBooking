@@ -1,4 +1,4 @@
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/lib/supabase';
 import { Appointment, AppointmentHistory, Report } from '@/data/models';
 import { toast } from 'sonner';
 import { format, addMinutes, parseISO } from 'date-fns';
@@ -41,7 +41,14 @@ class AppointmentService {
       const { data, error } = await supabase
         .from('appointments')
         .insert([{
-          ...appointment,
+          patient_id: appointment.patientId,
+          dentist_id: appointment.dentistId,
+          service_id: appointment.serviceId,
+          date: appointment.date,
+          start_time: appointment.startTime,
+          end_time: appointment.endTime,
+          status: appointment.status,
+          notes: appointment.notes,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         }])
@@ -69,9 +76,62 @@ class AppointmentService {
 
       const { data, error } = await query;
       if (error) throw error;
-      return data;
+      return data.map(appt => ({
+        ...appt,
+        patientId: appt.patient_id,
+        dentistId: appt.dentist_id,
+        serviceId: appt.service_id,
+        startTime: appt.start_time,
+        endTime: appt.end_time,
+        createdAt: new Date(appt.created_at),
+        updatedAt: new Date(appt.updated_at)
+      }));
     } catch (error: any) {
       console.error('Error fetching dentist appointments:', error);
+      throw new Error(error.message || 'Failed to fetch appointments');
+    }
+  }
+
+  async getPatientAppointments(patientId: string): Promise<Appointment[]> {
+    try {
+      const { data, error } = await supabase
+        .from('appointments')
+        .select(`
+          *,
+          dentists:dentist_id (
+            users:user_id (
+              name
+            )
+          ),
+          services:service_id (
+            name,
+            price
+          )
+        `)
+        .eq('patient_id', patientId)
+        .order('date', { ascending: true })
+        .order('start_time', { ascending: true });
+
+      if (error) throw error;
+
+      return data.map(appt => ({
+        id: appt.id,
+        patientId: appt.patient_id,
+        dentistId: appt.dentist_id,
+        serviceId: appt.service_id,
+        date: appt.date,
+        startTime: appt.start_time,
+        endTime: appt.end_time,
+        status: appt.status,
+        notes: appt.notes,
+        createdAt: new Date(appt.created_at),
+        updatedAt: new Date(appt.updated_at),
+        dentistName: appt.dentists?.users?.name,
+        serviceName: appt.services?.name,
+        servicePrice: appt.services?.price
+      }));
+    } catch (error: any) {
+      console.error('Error fetching patient appointments:', error);
       throw new Error(error.message || 'Failed to fetch appointments');
     }
   }
@@ -83,13 +143,33 @@ class AppointmentService {
   ): Promise<TimeSlot[]> {
     try {
       // Get dentist's working hours
-      const { data: workingHours, error: whError } = await supabase
+      let { data: workingHours, error: whError } = await supabase
         .from('working_hours')
         .select('*')
         .eq('dentist_id', dentistId)
         .eq('day_of_week', new Date(date).getDay());
 
       if (whError) throw whError;
+
+      // If no working hours found, create default ones (9 AM to 5 PM)
+      if (!workingHours || workingHours.length === 0) {
+        const defaultHours = {
+          dentist_id: dentistId,
+          day_of_week: new Date(date).getDay(),
+          start_time: '09:00',
+          end_time: '17:00',
+          is_available: true
+        };
+
+        const { data: newHours, error: createError } = await supabase
+          .from('working_hours')
+          .insert([defaultHours])
+          .select()
+          .single();
+
+        if (createError) throw createError;
+        workingHours = [newHours];
+      }
 
       // Get existing appointments
       const { data: appointments, error: apptError } = await supabase
