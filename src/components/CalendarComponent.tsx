@@ -3,7 +3,8 @@ import React, { useState } from 'react';
 import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { appointmentSlots } from '@/data/mockData';
+// !!! Директно добавям примерни налични слотове ако са празни
+import { appointmentSlots as originalAppointmentSlots } from '@/data/mockData';
 import { format, isSameDay } from 'date-fns';
 import { bg } from 'date-fns/locale';
 import { ChevronRight, Check, Clock } from 'lucide-react';
@@ -13,11 +14,40 @@ import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { appointmentService } from '@/services/appointmentService';
 
+// Примерни слотове, за да се вижда функционалността, ако няма в mockData
+const fallbackSlots = [
+  {
+    id: "slot1",
+    dentistId: "d1",
+    serviceId: "s1",
+    date: format(new Date(), 'yyyy-MM-dd'),
+    startTime: "09:30",
+    endTime: "10:00",
+    isAvailable: true,
+  },
+  {
+    id: "slot2",
+    dentistId: "d1",
+    serviceId: "s1",
+    date: format(new Date(), 'yyyy-MM-dd'),
+    startTime: "10:00",
+    endTime: "10:30",
+    isAvailable: true,
+  },
+];
+
+const appointmentSlots =
+  (originalAppointmentSlots && originalAppointmentSlots.length > 0)
+    ? originalAppointmentSlots
+    : fallbackSlots;
+
 interface TimeSlot {
   id: string;
   startTime: string;
   endTime: string;
   isAvailable: boolean;
+  dentistId?: string;
+  serviceId?: string;
 }
 
 interface CalendarComponentProps {
@@ -35,23 +65,31 @@ const CalendarComponent = ({ dentistId, serviceId, onAppointmentSelected }: Cale
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  // Списък с налични дати за избрания зъболекар
+  // Достъпни дати само за избрания зъболекар/услуга
   const availableDates = Array.from(
     new Set(
       appointmentSlots
-        .filter(slot => slot.isAvailable && (!dentistId || slot.dentistId === dentistId))
-        .map(slot => slot.date)
+        .filter(slot =>
+          slot.isAvailable &&
+          (!dentistId || slot.dentistId === dentistId) &&
+          (!serviceId || slot.serviceId === serviceId)
+        ).map(slot => slot.date)
     )
   );
 
-  // Дали дадена дата е налична
+  // Проверка дали дадена дата е налична
   const isDayAvailable = (date: Date) => {
-    return availableDates.some(availableDate =>
+    const check = availableDates.some(availableDate =>
       isSameDay(new Date(availableDate), date)
     );
+    // Диагностика:
+    if (!check) {
+      console.log(`[КАЛЕНДАР] Дата ${format(date, 'yyyy-MM-dd')} не е налична според филтъра dentistId=${dentistId}, serviceId=${serviceId} (налични: ${JSON.stringify(availableDates)})`);
+    }
+    return check;
   };
 
-  // Слотове за конкретен ден
+  // Слотове за конкретен ден, зъболекар, услуга
   const getTimeSlotsForDay = (date: Date): TimeSlot[] => {
     if (!date) return [];
     const dateString = format(date, 'yyyy-MM-dd');
@@ -60,7 +98,8 @@ const CalendarComponent = ({ dentistId, serviceId, onAppointmentSelected }: Cale
       .filter(slot =>
         slot.date === dateString &&
         slot.isAvailable &&
-        (!dentistId || slot.dentistId === dentistId)
+        (!dentistId || slot.dentistId === dentistId) &&
+        (!serviceId || slot.serviceId === serviceId)
       )
       .sort((a, b) => {
         const aTime = a.startTime.split(':').map(Number);
@@ -82,7 +121,16 @@ const CalendarComponent = ({ dentistId, serviceId, onAppointmentSelected }: Cale
 
   const timeSlots = selectedDate ? getTimeSlotsForDay(selectedDate) : [];
 
-  // Добавям логове и коригиране при избор
+  // Key diagnostics for developer/testing
+  React.useEffect(() => {
+    console.log("[КАЛЕНДАР] FILTERS: dentistId =", dentistId, "serviceId =", serviceId);
+    console.log("[КАЛЕНДАР] Достъпни дати:", availableDates);
+    if (selectedDate) {
+      console.log("[КАЛЕНДАР] Слотове за избраната дата:", getTimeSlotsForDay(selectedDate));
+    }
+  }, [dentistId, serviceId, selectedDate]);
+
+  // Обработка на избора на дата
   const handleDateChange = (date: Date | undefined) => {
     setSelectedDate(date);
     setSelectedSlotId(null);
@@ -178,7 +226,6 @@ const CalendarComponent = ({ dentistId, serviceId, onAppointmentSelected }: Cale
   };
   const groupedTimeSlots = groupTimeSlotsByHour();
 
-  // Календарът е напълно интерактивен благодарение на pointer-events-auto!
   return (
     <div className="grid md:grid-cols-12 gap-6">
       <Card className="md:col-span-5 shadow-sm">
@@ -190,7 +237,7 @@ const CalendarComponent = ({ dentistId, serviceId, onAppointmentSelected }: Cale
               selected={selectedDate}
               onSelect={handleDateChange}
               locale={bg}
-              className="mx-auto pointer-events-auto" // !!! Ключово
+              className="mx-auto pointer-events-auto"
               modifiers={{
                 available: isDayAvailable
               }}
@@ -213,17 +260,23 @@ const CalendarComponent = ({ dentistId, serviceId, onAppointmentSelected }: Cale
             <div className="w-3 h-3 rounded-full bg-dental-teal"></div>
             <span>Налични часове</span>
           </div>
+          {availableDates.length === 0 && (
+            <div className="text-red-500 mt-4 text-center">
+              Липсват налични часове за избрания зъболекар и услуга.<br />
+              <span className="text-xs text-gray-600">* Добави тестови слотове в mockData или избери без филтри.</span>
+            </div>
+          )}
         </CardContent>
       </Card>
 
       <Card className="md:col-span-7 shadow-sm">
         <CardContent className="p-4">
           <h3 className="text-lg font-medium mb-4">
-            {selectedDate 
-              ? `Налични часове за ${format(selectedDate, 'dd MMMM yyyy', { locale: bg })}` 
+            {selectedDate
+              ? `Налични часове за ${format(selectedDate, 'dd MMMM yyyy', { locale: bg })}`
               : 'Изберете дата, за да видите наличните часове'}
           </h3>
-          {selectedDate && getTimeSlotsForDay(selectedDate).length === 0 && (
+          {selectedDate && timeSlots.length === 0 && (
             <p className="text-gray-500">Няма налични часове за избраната дата.</p>
           )}
           <ScrollArea className="h-[400px] pr-4">
@@ -240,8 +293,8 @@ const CalendarComponent = ({ dentistId, serviceId, onAppointmentSelected }: Cale
                         key={slot.id}
                         variant={selectedSlotId === slot.id ? "default" : "outline"}
                         className={`
-                          ${selectedSlotId === slot.id 
-                            ? 'bg-dental-teal hover:bg-dental-teal/90' 
+                          ${selectedSlotId === slot.id
+                            ? 'bg-dental-teal hover:bg-dental-teal/90'
                             : 'hover:border-dental-teal hover:text-dental-teal'
                           }
                           transition-all
@@ -259,7 +312,7 @@ const CalendarComponent = ({ dentistId, serviceId, onAppointmentSelected }: Cale
           </ScrollArea>
           {selectedSlotId && (
             <div className="mt-6 flex justify-end animate-fade-in">
-              <Button 
+              <Button
                 className="bg-dental-teal hover:bg-dental-teal/90"
                 onClick={handleBookAppointment}
                 disabled={isLoading}
@@ -279,3 +332,4 @@ const CalendarComponent = ({ dentistId, serviceId, onAppointmentSelected }: Cale
 };
 
 export default CalendarComponent;
+
