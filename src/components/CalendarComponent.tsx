@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent } from '@/components/ui/card';
@@ -33,8 +34,8 @@ const CalendarComponent = ({ dentistId, serviceId, onAppointmentSelected }: Cale
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
   const navigate = useNavigate();
-  
-  // Актуализирано: наличните дати взимат slots за всички дентсити, затова когато е избран конкретен трябва да филтрираме само техните isAvailable слотове!
+
+  // Филтрирани налични дати САМО за избрания зъболекар
   const availableDates = Array.from(
     new Set(
       appointmentSlots
@@ -43,26 +44,25 @@ const CalendarComponent = ({ dentistId, serviceId, onAppointmentSelected }: Cale
     )
   );
 
-  // Function to highlight available dates in the calendar
+  // Дали даден ден е наличен за резервация
   const isDayAvailable = (date: Date) => {
     return availableDates.some(availableDate => 
       isSameDay(new Date(availableDate), date)
     );
   };
 
-  // Get time slots for selected date and dentist
+  // Взимане на свободните слотове за дата и зъболекар
   const getTimeSlotsForDay = (date: Date): TimeSlot[] => {
     if (!date) return [];
     const dateString = format(date, 'yyyy-MM-dd');
     const uniqueSlots = new Map();
-    appointmentSlots // филтрираме и по услуга ако има (за бъдещо разширение)
+    appointmentSlots
       .filter(slot =>
         slot.date === dateString &&
         slot.isAvailable &&
         (!dentistId || slot.dentistId === dentistId)
       )
       .sort((a, b) => {
-        // Сортиране по часове и минути
         const aTime = a.startTime.split(':').map(Number);
         const bTime = b.startTime.split(':').map(Number);
         return aTime[0] - bTime[0] || aTime[1] - bTime[1];
@@ -84,21 +84,25 @@ const CalendarComponent = ({ dentistId, serviceId, onAppointmentSelected }: Cale
 
   const handleDateChange = (date: Date | undefined) => {
     setSelectedDate(date);
-    setSelectedSlotId(null); // Reset selected slot when date changes
+    setSelectedSlotId(null);
+    setSelectedSlot(null);
+    setError(null);
+    if (date) console.log("[КАЛЕНДАР] Избрана дата:", date);
   };
 
   const handleSlotSelect = (slot: TimeSlot) => {
     setSelectedSlotId(slot.id);
     setSelectedSlot(slot);
+    setError(null);
+    console.log("[КАЛЕНДАР] Избран слот:", slot);
   };
 
-  // Helper function to validate UUID format (обновена: приема и d1-d3, s1-s8)
+  // Helper function to validate UUID (тест вариант, за back на dev)
   const validateUUID = (id?: string): string => {
     if (!id) return "00000000-0000-4000-a000-000000000000";
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
     if (uuidRegex.test(id)) return id;
-    // DEV SHORTHAND MAP for demo/mock/test users
-    if (id === 'd1' || id === 'd2' || id === 'd3') return "00000000-0000-4000-a000-000000000000";
+    if (id === 'd1' || id === 'd2' || id === 'd3' || id === 'd4') return "00000000-0000-4000-a000-000000000000";
     if (id.startsWith('s')) return "00000000-0000-4000-a000-000000000001";
     return "00000000-0000-4000-a000-000000000000";
   };
@@ -106,13 +110,10 @@ const CalendarComponent = ({ dentistId, serviceId, onAppointmentSelected }: Cale
   const handleBookAppointment = async () => {
     setError(null);
     if (!user) {
-      toast.error("Моля, влезте в акаунта си за да запазите час", {
-        description: "Пренасочване към страницата за вход..."
-      });
+      toast.error("Моля, влезте в акаунта си за да запазите час.", { description: "Пренасочване към вход..." });
       navigate('/login');
       return;
     }
-
     if (!selectedSlotId || !selectedDate || !selectedSlot) {
       setError("Моля, изберете дата и час.");
       toast.error("Моля, изберете дата и час.");
@@ -120,11 +121,19 @@ const CalendarComponent = ({ dentistId, serviceId, onAppointmentSelected }: Cale
     }
 
     setIsLoading(true);
-
     try {
       const formattedDate = format(selectedDate, 'yyyy-MM-dd');
       const finalDentistId = validateUUID(dentistId);
       const finalServiceId = validateUUID(serviceId);
+      console.log("[КАЛЕНДАР] Изпращам заявка за резервация", {
+        patientId: user.id,
+        dentistId: finalDentistId,
+        serviceId: finalServiceId,
+        date: formattedDate,
+        startTime: selectedSlot.startTime,
+        endTime: selectedSlot.endTime,
+      });
+
       const appointmentId = await appointmentService.createAppointment({
         patientId: user.id,
         dentistId: finalDentistId,
@@ -136,55 +145,40 @@ const CalendarComponent = ({ dentistId, serviceId, onAppointmentSelected }: Cale
         notes: ''
       });
 
-      // booking OK only if appointmentId is valid uuid (36 chars, not fallback)
       if (appointmentId && String(appointmentId).length === 36) {
         toast.success("Часът е запазен успешно!", {
-          description: `Вашият час беше успешно запазен за ${format(selectedDate, 'dd MMMM yyyy', { locale: bg })} в ${selectedSlot.startTime} ч.`
+          description: `Записахте час за ${format(selectedDate, 'dd.MM.yyyy')} в ${selectedSlot.startTime} ч.`
         });
         if (onAppointmentSelected) onAppointmentSelected(appointmentId);
-        setTimeout(() => navigate('/patient?tab=appointments'), 1000);
+        setTimeout(() => navigate('/patient?tab=appointments'), 800);
       } else {
         throw new Error("Неуспешно запазване на час. Моля, опитайте отново.");
       }
     } catch (error: any) {
-      setError(error.message || "Възникна грешка при запазване на часа.");
+      setError(error.message || "Възникна грешка.");
       toast.error("Грешка при запазване на час.", {
-        description: error.message || "Моля, опитайте отново по-късно или се свържете с нас."
+        description: error.message || "Моля, опитайте отново или се свържете с нас."
       });
+      console.error("[КАЛЕНДАР] Грешка при запис на час:", error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Group time slots by hour for better UI organization
+  // Групиране на часовете по часове за по-добър UI
   const groupTimeSlotsByHour = () => {
     const groupedSlots: Record<string, TimeSlot[]> = {};
-    
     timeSlots.forEach(slot => {
       const hour = parseInt(slot.startTime.split(':')[0]);
-      // Create hour range key (e.g., "09:00 - 10:00")
-      const hourString = hour.toString().padStart(2, '0');
-      const nextHour = (hour + 1).toString().padStart(2, '0');
-      const hourKey = `${hourString}:00 - ${nextHour}:00`;
-      
-      if (!groupedSlots[hourKey]) {
-        groupedSlots[hourKey] = [];
-      }
-      
+      const hourKey = `${hour.toString().padStart(2, '0')}:00 - ${(hour+1).toString().padStart(2, '0')}:00`;
+      if (!groupedSlots[hourKey]) groupedSlots[hourKey] = [];
       groupedSlots[hourKey].push(slot);
     });
-    
-    // Sort by hour
-    return Object.entries(groupedSlots).sort(([a], [b]) => {
-      const aHour = parseInt(a.split(':')[0]);
-      const bHour = parseInt(b.split(':')[0]);
-      return aHour - bHour;
-    });
+    return Object.entries(groupedSlots).sort(([a], [b]) => parseInt(a) - parseInt(b));
   };
-
   const groupedTimeSlots = groupTimeSlotsByHour();
 
-  // Фикс: при избор на дата от календара ВСИЧКО трябва да е интерактивно
+  // === НАЙ-ВАЖНО: Календарът вече е с pointer-events-auto ===
   return (
     <div className="grid md:grid-cols-12 gap-6">
       <Card className="md:col-span-5 shadow-sm">
@@ -285,3 +279,4 @@ const CalendarComponent = ({ dentistId, serviceId, onAppointmentSelected }: Cale
 };
 
 export default CalendarComponent;
+
