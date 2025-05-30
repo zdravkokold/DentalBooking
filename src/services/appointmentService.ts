@@ -2,7 +2,7 @@
 import { supabase } from '@/lib/supabase';
 import { AppointmentHistory, Report } from '@/data/models';
 import { toast } from 'sonner';
-import { format, addMinutes, parseISO, isSameDay } from 'date-fns';
+import { format, addMinutes, parseISO, isSameDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns';
 import { TimeSlot, WorkingHours } from '@/types';
 
 // Define the type of appointment status for type safety
@@ -142,6 +142,116 @@ class AppointmentService {
     } catch (error: any) {
       console.error('Error fetching patient appointments:', error);
       throw new Error(error.message || 'Failed to fetch appointments');
+    }
+  }
+
+  async getAppointmentHistory(period: 'week' | 'month' | 'all'): Promise<AppointmentHistory[]> {
+    try {
+      let query = supabase
+        .from('appointments')
+        .select(`
+          *,
+          dentists:dentist_id (
+            profiles:profile_id (
+              first_name,
+              last_name
+            )
+          ),
+          services:service_id (
+            name,
+            price,
+            duration
+          ),
+          profiles:patient_id (
+            first_name,
+            last_name,
+            phone,
+            health_status
+          )
+        `);
+
+      // Add date filtering based on period
+      const now = new Date();
+      if (period === 'week') {
+        const weekStart = format(startOfWeek(now), 'yyyy-MM-dd');
+        const weekEnd = format(endOfWeek(now), 'yyyy-MM-dd');
+        query = query.gte('date', weekStart).lte('date', weekEnd);
+      } else if (period === 'month') {
+        const monthStart = format(startOfMonth(now), 'yyyy-MM-dd');
+        const monthEnd = format(endOfMonth(now), 'yyyy-MM-dd');
+        query = query.gte('date', monthStart).lte('date', monthEnd);
+      }
+
+      const { data, error } = await query.order('date', { ascending: false });
+
+      if (error) throw error;
+
+      return data ? data.map(appt => ({
+        appointment: mapAppointmentFromDB(appt),
+        patient: {
+          id: appt.patient_id,
+          name: appt.profiles?.first_name && appt.profiles?.last_name 
+            ? `${appt.profiles.first_name} ${appt.profiles.last_name}`
+            : 'Unknown Patient',
+          email: '', // Not included in this query
+          phone: appt.profiles?.phone || '',
+          healthStatus: appt.profiles?.health_status
+        },
+        dentist: {
+          id: appt.dentist_id,
+          name: appt.dentists?.profiles?.first_name && appt.dentists?.profiles?.last_name 
+            ? `${appt.dentists.profiles.first_name} ${appt.dentists.profiles.last_name}`
+            : 'Unknown Dentist',
+          specialization: '',
+          imageUrl: '',
+          bio: '',
+          rating: 0,
+          yearsOfExperience: 0,
+          education: '',
+          languages: []
+        },
+        service: {
+          id: appt.service_id,
+          name: appt.services?.name || 'Unknown Service',
+          description: '',
+          price: appt.services?.price || 0,
+          duration: appt.services?.duration || 30,
+          imageUrl: ''
+        }
+      })) : [];
+    } catch (error: any) {
+      console.error('Error fetching appointment history:', error);
+      throw new Error(error.message || 'Failed to fetch appointment history');
+    }
+  }
+
+  async generateReport(startDate: string, endDate: string): Promise<Report> {
+    try {
+      const { data, error } = await supabase
+        .from('appointments')
+        .select('*')
+        .gte('date', startDate)
+        .lte('date', endDate);
+
+      if (error) throw error;
+
+      const appointments = data || [];
+      const totalAppointments = appointments.length;
+      const completedAppointments = appointments.filter(a => a.status === 'completed').length;
+      const cancelledAppointments = appointments.filter(a => a.status === 'cancelled').length;
+      const uniquePatients = new Set(appointments.map(a => a.patient_id)).size;
+
+      return {
+        startDate,
+        endDate,
+        totalAppointments,
+        completedAppointments,
+        cancelledAppointments,
+        patientCount: uniquePatients
+      };
+    } catch (error: any) {
+      console.error('Error generating report:', error);
+      throw new Error(error.message || 'Failed to generate report');
     }
   }
 

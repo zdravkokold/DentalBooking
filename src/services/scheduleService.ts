@@ -1,3 +1,4 @@
+
 import { WorkingHours } from '@/types';
 import { supabase } from '@/lib/supabase';
 import { format, parseISO } from 'date-fns';
@@ -47,8 +48,9 @@ class ScheduleService {
     try {
       // Validate working hours if time is being updated
       if (workingHours.startTime || workingHours.endTime) {
+        const existingHours = await this.getWorkingHoursById(id);
         this.validateWorkingHours({
-          ...await this.getWorkingHoursById(id),
+          ...existingHours,
           ...workingHours
         } as WorkingHours);
       }
@@ -90,7 +92,7 @@ class ScheduleService {
     return data;
   }
 
-  private validateWorkingHours(workingHours: WorkingHours): void {
+  private validateWorkingHours(workingHours: Omit<WorkingHours, 'id'> | WorkingHours): void {
     const { startTime, endTime } = workingHours;
 
     // Check if times are in valid format
@@ -136,4 +138,4 @@ class ScheduleService {
   }
 }
 
-export const scheduleService = new ScheduleService(); 
+export const scheduleService = new ScheduleService();

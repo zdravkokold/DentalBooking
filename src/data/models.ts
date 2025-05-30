@@ -43,7 +43,7 @@ export interface Appointment {
   startTime: string; // Format: "HH:MM"
   endTime: string; // Format: "HH:MM"
   status: AppointmentStatus;
-  notes?: string;
+  notes: string; // Make this required to match database
   createdAt: string;
 }
 

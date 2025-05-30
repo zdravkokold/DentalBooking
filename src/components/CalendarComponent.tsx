@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent } from '@/components/ui/card';
@@ -84,7 +85,8 @@ const CalendarComponent: React.FC<CalendarComponentProps> = ({
         date: format(date, 'yyyy-MM-dd'),
         startTime: selectedSlot.startTime,
         endTime: selectedSlot.endTime,
-        status: 'pending'
+        status: 'pending',
+        notes: '' // Add the missing notes property
       });
 
       toast.success('Часът е запазен успешно!');
