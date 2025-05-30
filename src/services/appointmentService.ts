@@ -1,3 +1,4 @@
+
 import { supabase } from '@/lib/supabase';
 import { AppointmentHistory, Report } from '@/data/models';
 import { toast } from 'sonner';
@@ -42,8 +43,10 @@ const mapAppointmentFromDB = (dbAppointment: any): Appointment => {
 };
 
 class AppointmentService {
-  async createAppointment(appointment: Omit<Appointment, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
+  async createAppointment(appointment: Omit<Appointment, 'id' | 'createdAt' | 'updatedAt'>): Promise<Appointment> {
     try {
+      console.log('Creating appointment with data:', appointment);
+
       // Validate appointment time
       if (!this.isValidAppointmentTime(appointment)) {
         throw new Error('Invalid appointment time');
@@ -66,15 +69,18 @@ class AppointmentService {
           start_time: appointment.startTime,
           end_time: appointment.endTime,
           status: appointment.status,
-          notes: appointment.notes,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          notes: appointment.notes || ''
         }])
-        .select('id')
+        .select()
         .single();
 
-      if (error) throw error;
-      return data.id;
+      if (error) {
+        console.error('Supabase error creating appointment:', error);
+        throw error;
+      }
+
+      console.log('Appointment created successfully:', data);
+      return mapAppointmentFromDB(data);
     } catch (error: any) {
       console.error('Error creating appointment:', error);
       throw new Error(error.message || 'Failed to create appointment');
@@ -94,16 +100,8 @@ class AppointmentService {
 
       const { data, error } = await query;
       if (error) throw error;
-      return data.map(appt => ({
-        ...appt,
-        patientId: appt.patient_id,
-        dentistId: appt.dentist_id,
-        serviceId: appt.service_id,
-        startTime: appt.start_time,
-        endTime: appt.end_time,
-        createdAt: new Date(appt.created_at),
-        updatedAt: new Date(appt.updated_at)
-      }));
+      
+      return data ? data.map(mapAppointmentFromDB) : [];
     } catch (error: any) {
       console.error('Error fetching dentist appointments:', error);
       throw new Error(error.message || 'Failed to fetch appointments');
@@ -117,8 +115,9 @@ class AppointmentService {
         .select(`
           *,
           dentists:dentist_id (
-            users:user_id (
-              name
+            profiles:profile_id (
+              first_name,
+              last_name
             )
           ),
           services:service_id (
@@ -132,22 +131,14 @@ class AppointmentService {
 
       if (error) throw error;
 
-      return data.map(appt => ({
-        id: appt.id,
-        patientId: appt.patient_id,
-        dentistId: appt.dentist_id,
-        serviceId: appt.service_id,
-        date: appt.date,
-        startTime: appt.start_time,
-        endTime: appt.end_time,
-        status: appt.status,
-        notes: appt.notes,
-        createdAt: new Date(appt.created_at).toISOString(),
-        updatedAt: appt.updated_at ? new Date(appt.updated_at).toISOString() : undefined,
-        dentistName: appt.dentists?.users?.name,
+      return data ? data.map(appt => ({
+        ...mapAppointmentFromDB(appt),
+        dentistName: appt.dentists?.profiles?.first_name && appt.dentists?.profiles?.last_name 
+          ? `${appt.dentists.profiles.first_name} ${appt.dentists.profiles.last_name}`
+          : undefined,
         serviceName: appt.services?.name,
         servicePrice: appt.services?.price
-      }));
+      })) : [];
     } catch (error: any) {
       console.error('Error fetching patient appointments:', error);
       throw new Error(error.message || 'Failed to fetch appointments');
@@ -169,9 +160,9 @@ class AppointmentService {
         throw new Error('Invalid dentist ID');
       }
       
-      // Get dentist's working hours
+      // Get dentist's working hours from dentist_availabilities table
       let { data: workingHours, error: whError } = await supabase
-        .from('working_hours')
+        .from('dentist_availabilities')
         .select('*')
         .eq('dentist_id', validDentistId)
         .eq('day_of_week', new Date(date).getDay());
@@ -233,7 +224,8 @@ class AppointmentService {
 
       console.log('Service duration:', duration);
 
-      const slots = this.generateTimeSlots(workingHours, appointments || [], date, duration);
+      const mappedAppointments = appointments ? appointments.map(mapAppointmentFromDB) : [];
+      const slots = this.generateTimeSlots(workingHours, mappedAppointments, date, duration);
       console.log('Generated slots:', slots);
       
       return slots;
@@ -369,17 +361,23 @@ class AppointmentService {
   }
 
   private async checkForConflicts(appointment: Partial<Appointment>): Promise<boolean> {
-    if (!appointment.dentistId || !appointment.date) return true;
+    if (!appointment.dentistId || !appointment.date || !appointment.startTime || !appointment.endTime) {
+      return true;
+    }
 
     const { data: conflicts, error } = await supabase
       .from('appointments')
       .select('*')
       .eq('dentist_id', appointment.dentistId)
       .eq('date', appointment.date)
-      .overlaps('start_time', [appointment.startTime, appointment.endTime]);
+      .or(`and(start_time.lt.${appointment.endTime},end_time.gt.${appointment.startTime})`);
 
-    if (error) throw error;
-    return conflicts.length > 0;
+    if (error) {
+      console.error('Error checking conflicts:', error);
+      throw error;
+    }
+    
+    return conflicts && conflicts.length > 0;
   }
 }
 
@@ -420,42 +418,4 @@ function validateUUID(id: string): string | null {
   
   console.error('Invalid UUID format:', id);
   return null;
-}
-
-// Helper function to calculate end time based on start time and duration
-const calculateEndTime = (startTime: string, durationMinutes: number): string => {
-  const [hours, minutes] = startTime.split(':').map(Number);
-  const endDate = new Date();
-  endDate.setHours(hours, minutes + durationMinutes);
-  return `${String(endDate.getHours()).padStart(2, '0')}:${String(endDate.getMinutes()).padStart(2, '0')}`;
-};
-
-// Mock appointments for fallback
-function getMockAppointments(dentistId: string): Appointment[] {
-  return [
-    {
-      id: "1",
-      patientId: "p1",
-      dentistId: dentistId,
-      serviceId: "s1",
-      date: new Date().toISOString().split('T')[0],
-      startTime: "09:00",
-      endTime: "10:00",
-      status: "scheduled",
-      notes: "Regular checkup",
-      createdAt: new Date().toISOString()
-    },
-    {
-      id: "2",
-      patientId: "p2",
-      dentistId: dentistId,
-      serviceId: "s2",
-      date: new Date().toISOString().split('T')[0],
-      startTime: "11:00",
-      endTime: "12:00",
-      status: "scheduled",
-      notes: "Teeth cleaning",
-      createdAt: new Date().toISOString()
-    }
-  ];
 }

@@ -14,36 +14,39 @@ export type Database = {
           created_at: string
           date: string
           dentist_id: string
+          end_time: string
           id: string
           notes: string | null
           patient_id: string
           service_id: string
+          start_time: string
           status: string | null
-          time: string
           updated_at: string
         }
         Insert: {
           created_at?: string
           date: string
           dentist_id: string
+          end_time?: string
           id?: string
           notes?: string | null
           patient_id: string
           service_id: string
+          start_time?: string
           status?: string | null
-          time: string
           updated_at?: string
         }
         Update: {
           created_at?: string
           date?: string
           dentist_id?: string
+          end_time?: string
           id?: string
           notes?: string | null
           patient_id?: string
           service_id?: string
+          start_time?: string
           status?: string | null
-          time?: string
           updated_at?: string
         }
         Relationships: [

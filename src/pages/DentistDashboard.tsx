@@ -73,8 +73,8 @@ const DentistDashboard = () => {
           dentistId: appointment.dentist_id,
           serviceId: appointment.service_id,
           date: appointment.date,
-          startTime: appointment.time,
-          endTime: calculateEndTime(appointment.time, appointment.services?.duration || 60),
+          startTime: appointment.start_time,
+          endTime: appointment.end_time,
           status: appointment.status || 'pending',
           notes: appointment.notes || '',
           createdAt: appointment.created_at,
@@ -101,14 +101,6 @@ const DentistDashboard = () => {
 
     loadAppointments();
   }, [user?.id]);
-
-  // Helper function to calculate end time
-  const calculateEndTime = (startTime: string, durationMinutes: number): string => {
-    const [hours, minutes] = startTime.split(':').map(Number);
-    const endDate = new Date();
-    endDate.setHours(hours, minutes + durationMinutes);
-    return `${String(endDate.getHours()).padStart(2, '0')}:${String(endDate.getMinutes()).padStart(2, '0')}`;
-  };
 
   // Функции за обработка на бутоните
   const handleViewDetails = (appointmentId) => {
