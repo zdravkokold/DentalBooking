@@ -1,4 +1,3 @@
-
 import { supabase } from '@/lib/supabase';
 import { AppointmentHistory, Report } from '@/data/models';
 import { toast } from 'sonner';
@@ -42,18 +41,73 @@ const mapAppointmentFromDB = (dbAppointment: any): Appointment => {
   };
 };
 
+// Helper function to validate UUID format
+function validateUUID(id: string): string | null {
+  // UUID regex pattern
+  const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  
+  // Check if the ID is a valid UUID
+  if (id && uuidPattern.test(id)) {
+    return id;
+  }
+  
+  // For development environment, use default UUID for specific known short IDs
+  if (id === 'd1') {
+    return "00000000-0000-4000-a000-000000000001";
+  } else if (id === 'd2') {
+    return "00000000-0000-4000-a000-000000000002";
+  } else if (id === 'd3') {
+    return "00000000-0000-4000-a000-000000000003";
+  } else if (id === 'd4') {
+    return "00000000-0000-4000-a000-000000000004";
+  } else if (id === 's1') {
+    return "00000000-0000-4000-b000-000000000001";
+  } else if (id === 's2') {
+    return "00000000-0000-4000-b000-000000000002";
+  } else if (id === 's3') {
+    return "00000000-0000-4000-b000-000000000003";
+  } else if (id === 's4') {
+    return "00000000-0000-4000-b000-000000000004";
+  } else if (id === 's5') {
+    return "00000000-0000-4000-b000-000000000005";
+  } else if (id === 's6') {
+    return "00000000-0000-4000-b000-000000000006";
+  }
+  
+  console.error('Invalid UUID format:', id);
+  return null;
+}
+
 class AppointmentService {
   async createAppointment(appointment: Omit<Appointment, 'id' | 'createdAt' | 'updatedAt'>): Promise<Appointment> {
     try {
       console.log('Creating appointment with data:', appointment);
 
+      // Convert short IDs to UUIDs
+      const validDentistId = validateUUID(appointment.dentistId);
+      const validServiceId = validateUUID(appointment.serviceId);
+
+      if (!validDentistId) {
+        throw new Error('Invalid dentist ID');
+      }
+
+      if (!validServiceId) {
+        throw new Error('Invalid service ID');
+      }
+
+      const appointmentWithValidIds = {
+        ...appointment,
+        dentistId: validDentistId,
+        serviceId: validServiceId
+      };
+
       // Validate appointment time
-      if (!this.isValidAppointmentTime(appointment)) {
+      if (!this.isValidAppointmentTime(appointmentWithValidIds)) {
         throw new Error('Invalid appointment time');
       }
 
       // Check for conflicts
-      const hasConflict = await this.checkForConflicts(appointment);
+      const hasConflict = await this.checkForConflicts(appointmentWithValidIds);
       if (hasConflict) {
         throw new Error('This time slot is no longer available');
       }
@@ -62,14 +116,14 @@ class AppointmentService {
       const { data, error } = await supabase
         .from('appointments')
         .insert([{
-          patient_id: appointment.patientId,
-          dentist_id: appointment.dentistId,
-          service_id: appointment.serviceId,
-          date: appointment.date,
-          start_time: appointment.startTime,
-          end_time: appointment.endTime,
-          status: appointment.status,
-          notes: appointment.notes || ''
+          patient_id: appointmentWithValidIds.patientId,
+          dentist_id: appointmentWithValidIds.dentistId,
+          service_id: appointmentWithValidIds.serviceId,
+          date: appointmentWithValidIds.date,
+          start_time: appointmentWithValidIds.startTime,
+          end_time: appointmentWithValidIds.endTime,
+          status: appointmentWithValidIds.status,
+          notes: appointmentWithValidIds.notes || ''
         }])
         .select()
         .single();
@@ -89,10 +143,15 @@ class AppointmentService {
 
   async getDentistAppointments(dentistId: string, date?: string): Promise<Appointment[]> {
     try {
+      const validDentistId = validateUUID(dentistId);
+      if (!validDentistId) {
+        throw new Error('Invalid dentist ID');
+      }
+
       let query = supabase
         .from('appointments')
         .select('*')
-        .eq('dentist_id', dentistId);
+        .eq('dentist_id', validDentistId);
 
       if (date) {
         query = query.eq('date', date);
@@ -492,40 +551,3 @@ class AppointmentService {
 }
 
 export const appointmentService = new AppointmentService();
-
-// Helper function to validate UUID format
-function validateUUID(id: string): string | null {
-  // UUID regex pattern
-  const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-  
-  // Check if the ID is a valid UUID
-  if (id && uuidPattern.test(id)) {
-    return id;
-  }
-  
-  // For development environment, use default UUID for specific known short IDs
-  if (id === 'd1') {
-    return "00000000-0000-4000-a000-000000000001";
-  } else if (id === 'd2') {
-    return "00000000-0000-4000-a000-000000000002";
-  } else if (id === 'd3') {
-    return "00000000-0000-4000-a000-000000000003";
-  } else if (id === 'd4') {
-    return "00000000-0000-4000-a000-000000000004";
-  } else if (id === 's1') {
-    return "00000000-0000-4000-b000-000000000001";
-  } else if (id === 's2') {
-    return "00000000-0000-4000-b000-000000000002";
-  } else if (id === 's3') {
-    return "00000000-0000-4000-b000-000000000003";
-  } else if (id === 's4') {
-    return "00000000-0000-4000-b000-000000000004";
-  } else if (id === 's5') {
-    return "00000000-0000-4000-b000-000000000005";
-  } else if (id === 's6') {
-    return "00000000-0000-4000-b000-000000000006";
-  }
-  
-  console.error('Invalid UUID format:', id);
-  return null;
-}
