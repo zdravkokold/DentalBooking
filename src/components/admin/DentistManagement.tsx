@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -103,16 +102,21 @@ const DentistManagement = () => {
 
       if (error) throw error;
 
-      const dentistsWithProfiles = data?.map(dentist => ({
-        id: dentist.id,
-        firstName: dentist.profiles && typeof dentist.profiles === 'object' && !Array.isArray(dentist.profiles) && dentist.profiles.first_name || '',
-        lastName: dentist.profiles && typeof dentist.profiles === 'object' && !Array.isArray(dentist.profiles) && dentist.profiles.last_name || '',
-        email: dentist.profiles && typeof dentist.profiles === 'object' && !Array.isArray(dentist.profiles) && dentist.profiles.email || '',
-        phone: dentist.profiles && typeof dentist.profiles === 'object' && !Array.isArray(dentist.profiles) && dentist.profiles.phone || '',
-        specialization: dentist.specialization || '',
-        yearsOfExperience: dentist.years_of_experience || 0,
-        bio: dentist.bio || '',
-      })) || [];
+      const dentistsWithProfiles = data?.map(dentist => {
+        // Type-safe access to profile data
+        const profile = dentist.profiles as any;
+
+        return {
+          id: dentist.id,
+          firstName: profile?.first_name || '',
+          lastName: profile?.last_name || '',
+          email: profile?.email || '',
+          phone: profile?.phone || '',
+          specialization: dentist.specialization || '',
+          yearsOfExperience: dentist.years_of_experience || 0,
+          bio: dentist.bio || '',
+        };
+      }) || [];
 
       setDentists(dentistsWithProfiles);
     } catch (error) {

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import {
@@ -88,22 +87,29 @@ const AppointmentManagement = () => {
 
       if (error) throw error;
 
-      const appointmentsWithDetails = data?.map(appt => ({
-        id: appt.id,
-        date: appt.date,
-        startTime: appt.start_time,
-        endTime: appt.end_time,
-        status: appt.status || 'pending',
-        notes: appt.notes || '',
-        patientName: appt.profiles && typeof appt.profiles === 'object' && !Array.isArray(appt.profiles) && appt.profiles.first_name && appt.profiles.last_name 
-          ? `${appt.profiles.first_name} ${appt.profiles.last_name}`
-          : 'Неизвестен пациент',
-        dentistName: appt.dentists && typeof appt.dentists === 'object' && !Array.isArray(appt.dentists) && appt.dentists.profiles && typeof appt.dentists.profiles === 'object' && !Array.isArray(appt.dentists.profiles) && appt.dentists.profiles.first_name && appt.dentists.profiles.last_name 
-          ? `${appt.dentists.profiles.first_name} ${appt.dentists.profiles.last_name}`
-          : 'Неизвестен зъболекар',
-        serviceName: appt.services && typeof appt.services === 'object' && !Array.isArray(appt.services) && appt.services.name || 'Неизвестна услуга',
-        servicePrice: appt.services && typeof appt.services === 'object' && !Array.isArray(appt.services) && appt.services.price || 0,
-      })) || [];
+      const appointmentsWithDetails = data?.map(appt => {
+        // Type-safe access to nested data
+        const patient = appt.profiles as any;
+        const dentist = appt.dentists as any;
+        const service = appt.services as any;
+
+        return {
+          id: appt.id,
+          date: appt.date,
+          startTime: appt.start_time,
+          endTime: appt.end_time,
+          status: appt.status || 'pending',
+          notes: appt.notes || '',
+          patientName: patient?.first_name && patient?.last_name 
+            ? `${patient.first_name} ${patient.last_name}`
+            : 'Неизвестен пациент',
+          dentistName: dentist?.profiles?.first_name && dentist?.profiles?.last_name 
+            ? `${dentist.profiles.first_name} ${dentist.profiles.last_name}`
+            : 'Неизвестен зъболекар',
+          serviceName: service?.name || 'Неизвестна услуга',
+          servicePrice: service?.price || 0,
+        };
+      }) || [];
 
       setAppointments(appointmentsWithDetails);
     } catch (error) {
