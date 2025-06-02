@@ -1,3 +1,4 @@
+
 import { supabase } from '@/lib/supabase';
 import { AppointmentHistory, Report } from '@/data/models';
 import { toast } from 'sonner';
@@ -112,7 +113,7 @@ class AppointmentService {
         throw new Error('This time slot is no longer available');
       }
 
-      // Create appointment
+      // Create appointment using only existing tables
       const { data, error } = await supabase
         .from('appointments')
         .insert([{
@@ -190,14 +191,19 @@ class AppointmentService {
 
       if (error) throw error;
 
-      return data ? data.map(appt => ({
-        ...mapAppointmentFromDB(appt),
-        dentistName: appt.dentists?.profiles?.first_name && appt.dentists?.profiles?.last_name 
-          ? `${appt.dentists.profiles.first_name} ${appt.dentists.profiles.last_name}`
-          : undefined,
-        serviceName: appt.services?.name,
-        servicePrice: appt.services?.price
-      })) : [];
+      return data ? data.map(appt => {
+        const dentist = appt.dentists as any;
+        const service = appt.services as any;
+
+        return {
+          ...mapAppointmentFromDB(appt),
+          dentistName: dentist?.profiles?.first_name && dentist?.profiles?.last_name 
+            ? `${dentist.profiles.first_name} ${dentist.profiles.last_name}`
+            : undefined,
+          serviceName: service?.name,
+          servicePrice: service?.price
+        };
+      }) : [];
     } catch (error: any) {
       console.error('Error fetching patient appointments:', error);
       throw new Error(error.message || 'Failed to fetch appointments');
@@ -245,39 +251,45 @@ class AppointmentService {
 
       if (error) throw error;
 
-      return data ? data.map(appt => ({
-        appointment: mapAppointmentFromDB(appt),
-        patient: {
-          id: appt.patient_id,
-          name: appt.profiles?.first_name && appt.profiles?.last_name 
-            ? `${appt.profiles.first_name} ${appt.profiles.last_name}`
-            : 'Unknown Patient',
-          email: '', // Not included in this query
-          phone: appt.profiles?.phone || '',
-          healthStatus: appt.profiles?.health_status
-        },
-        dentist: {
-          id: appt.dentist_id,
-          name: appt.dentists?.profiles?.first_name && appt.dentists?.profiles?.last_name 
-            ? `${appt.dentists.profiles.first_name} ${appt.dentists.profiles.last_name}`
-            : 'Unknown Dentist',
-          specialization: '',
-          imageUrl: '',
-          bio: '',
-          rating: 0,
-          yearsOfExperience: 0,
-          education: '',
-          languages: []
-        },
-        service: {
-          id: appt.service_id,
-          name: appt.services?.name || 'Unknown Service',
-          description: '',
-          price: appt.services?.price || 0,
-          duration: appt.services?.duration || 30,
-          imageUrl: ''
-        }
-      })) : [];
+      return data ? data.map(appt => {
+        const dentist = appt.dentists as any;
+        const service = appt.services as any;
+        const patient = appt.profiles as any;
+
+        return {
+          appointment: mapAppointmentFromDB(appt),
+          patient: {
+            id: appt.patient_id,
+            name: patient?.first_name && patient?.last_name 
+              ? `${patient.first_name} ${patient.last_name}`
+              : 'Unknown Patient',
+            email: '',
+            phone: patient?.phone || '',
+            healthStatus: patient?.health_status
+          },
+          dentist: {
+            id: appt.dentist_id,
+            name: dentist?.profiles?.first_name && dentist?.profiles?.last_name 
+              ? `${dentist.profiles.first_name} ${dentist.profiles.last_name}`
+              : 'Unknown Dentist',
+            specialization: '',
+            imageUrl: '',
+            bio: '',
+            rating: 0,
+            yearsOfExperience: 0,
+            education: '',
+            languages: []
+          },
+          service: {
+            id: appt.service_id,
+            name: service?.name || 'Unknown Service',
+            description: '',
+            price: service?.price || 0,
+            duration: service?.duration || 30,
+            imageUrl: ''
+          }
+        };
+      }) : [];
     } catch (error: any) {
       console.error('Error fetching appointment history:', error);
       throw new Error(error.message || 'Failed to fetch appointment history');

@@ -27,6 +27,7 @@ const CalendarComponent: React.FC<CalendarComponentProps> = ({
 }) => {
   const [date, setDate] = useState<Date>(new Date());
   const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null);
+  const [isBooking, setIsBooking] = useState(false);
   const { user } = useAuth();
   const navigate = useNavigate();
 
@@ -77,7 +78,18 @@ const CalendarComponent: React.FC<CalendarComponentProps> = ({
       return;
     }
 
+    setIsBooking(true);
+
     try {
+      console.log('Booking appointment with:', {
+        patientId: user.id,
+        dentistId: dentistId,
+        serviceId: serviceId,
+        date: format(date, 'yyyy-MM-dd'),
+        startTime: selectedSlot.startTime,
+        endTime: selectedSlot.endTime
+      });
+
       const appointment = await appointmentService.createAppointment({
         patientId: user.id,
         dentistId: dentistId,
@@ -86,7 +98,7 @@ const CalendarComponent: React.FC<CalendarComponentProps> = ({
         startTime: selectedSlot.startTime,
         endTime: selectedSlot.endTime,
         status: 'pending',
-        notes: '' // Add the missing notes property
+        notes: ''
       });
 
       toast.success('Часът е запазен успешно!');
@@ -96,14 +108,24 @@ const CalendarComponent: React.FC<CalendarComponentProps> = ({
     } catch (error: any) {
       console.error('Error booking appointment:', error);
       toast.error(error.message || 'Възникна грешка при запазването на час.');
+    } finally {
+      setIsBooking(false);
     }
   };
 
   if (error) {
     console.error('Error in CalendarComponent:', error);
     return (
-      <div className="text-center text-red-500">
+      <div className="text-center text-red-500 p-4">
         Възникна грешка при зареждането на свободните часове.
+        <br />
+        <Button 
+          variant="outline" 
+          onClick={() => refetch()} 
+          className="mt-2"
+        >
+          Опитай отново
+        </Button>
       </div>
     );
   }
@@ -168,9 +190,9 @@ const CalendarComponent: React.FC<CalendarComponentProps> = ({
               <Button
                 className="w-full gap-2"
                 onClick={handleBookAppointment}
-                disabled={isLoading}
+                disabled={isBooking}
               >
-                {isLoading ? (
+                {isBooking ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
                   <ChevronRight className="h-4 w-4" />
