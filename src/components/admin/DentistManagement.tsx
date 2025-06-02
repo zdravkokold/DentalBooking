@@ -105,10 +105,10 @@ const DentistManagement = () => {
 
       const dentistsWithProfiles = data?.map(dentist => ({
         id: dentist.id,
-        firstName: dentist.profiles?.first_name || '',
-        lastName: dentist.profiles?.last_name || '',
-        email: dentist.profiles?.email || '',
-        phone: dentist.profiles?.phone || '',
+        firstName: dentist.profiles && typeof dentist.profiles === 'object' && !Array.isArray(dentist.profiles) && dentist.profiles.first_name || '',
+        lastName: dentist.profiles && typeof dentist.profiles === 'object' && !Array.isArray(dentist.profiles) && dentist.profiles.last_name || '',
+        email: dentist.profiles && typeof dentist.profiles === 'object' && !Array.isArray(dentist.profiles) && dentist.profiles.email || '',
+        phone: dentist.profiles && typeof dentist.profiles === 'object' && !Array.isArray(dentist.profiles) && dentist.profiles.phone || '',
         specialization: dentist.specialization || '',
         yearsOfExperience: dentist.years_of_experience || 0,
         bio: dentist.bio || '',

@@ -95,14 +95,14 @@ const AppointmentManagement = () => {
         endTime: appt.end_time,
         status: appt.status || 'pending',
         notes: appt.notes || '',
-        patientName: appt.profiles?.first_name && appt.profiles?.last_name 
+        patientName: appt.profiles && typeof appt.profiles === 'object' && !Array.isArray(appt.profiles) && appt.profiles.first_name && appt.profiles.last_name 
           ? `${appt.profiles.first_name} ${appt.profiles.last_name}`
           : 'Неизвестен пациент',
-        dentistName: appt.dentists?.profiles?.first_name && appt.dentists?.profiles?.last_name 
+        dentistName: appt.dentists && typeof appt.dentists === 'object' && !Array.isArray(appt.dentists) && appt.dentists.profiles && typeof appt.dentists.profiles === 'object' && !Array.isArray(appt.dentists.profiles) && appt.dentists.profiles.first_name && appt.dentists.profiles.last_name 
           ? `${appt.dentists.profiles.first_name} ${appt.dentists.profiles.last_name}`
           : 'Неизвестен зъболекар',
-        serviceName: appt.services?.name || 'Неизвестна услуга',
-        servicePrice: appt.services?.price || 0,
+        serviceName: appt.services && typeof appt.services === 'object' && !Array.isArray(appt.services) && appt.services.name || 'Неизвестна услуга',
+        servicePrice: appt.services && typeof appt.services === 'object' && !Array.isArray(appt.services) && appt.services.price || 0,
       })) || [];
 
       setAppointments(appointmentsWithDetails);
